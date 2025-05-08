@@ -1,6 +1,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileChart } from "lucide-react";
+import { FileBarChart } from "lucide-react";
 
 const Relatorios = () => {
   return (
@@ -9,7 +9,7 @@ const Relatorios = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <FileChart className="h-5 w-5" /> 
+            <FileBarChart className="h-5 w-5" /> 
             Relatórios Financeiros
           </CardTitle>
         </CardHeader>

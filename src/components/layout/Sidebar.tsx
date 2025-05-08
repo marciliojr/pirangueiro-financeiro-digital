@@ -7,7 +7,7 @@ import {
   CreditCard, 
   PiggyBank, 
   FileText, 
-  FileChart, 
+  FileBarChart, 
   SlidersHorizontal,
   Menu, 
   X 
@@ -51,7 +51,7 @@ export const Sidebar = () => {
     { to: "/receitas", label: "Receitas", icon: PiggyBank },
     { to: "/despesas", label: "Despesas", icon: FileText },
     { to: "/limites", label: "Limites de Gastos", icon: SlidersHorizontal },
-    { to: "/relatorios", label: "Relatórios", icon: FileChart },
+    { to: "/relatorios", label: "Relatórios", icon: FileBarChart },
   ];
 
   const toggleSidebar = () => {
