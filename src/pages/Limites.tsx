@@ -1,24 +1,24 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileChart } from "lucide-react";
+import { SlidersHorizontal } from "lucide-react";
 
-const Relatorios = () => {
+const Limites = () => {
   return (
     <div className="container mx-auto py-10">
-      <h1 className="text-2xl font-bold mb-6">Relatórios</h1>
+      <h1 className="text-2xl font-bold mb-6">Limites de Gastos</h1>
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <FileChart className="h-5 w-5" /> 
-            Relatórios Financeiros
+            <SlidersHorizontal className="h-5 w-5" /> 
+            Gerenciamento de Limites de Gastos
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p>Aqui você pode visualizar relatórios e analisar seus dados financeiros</p>
+          <p>Aqui você pode configurar seus limites de gastos</p>
         </CardContent>
       </Card>
     </div>
   );
 };
 
-export default Relatorios;
+export default Limites;

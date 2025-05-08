@@ -1,24 +1,24 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileChart } from "lucide-react";
+import { CreditCard } from "lucide-react";
 
-const Relatorios = () => {
+const Cartoes = () => {
   return (
     <div className="container mx-auto py-10">
-      <h1 className="text-2xl font-bold mb-6">Relatórios</h1>
+      <h1 className="text-2xl font-bold mb-6">Cartões</h1>
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <FileChart className="h-5 w-5" /> 
-            Relatórios Financeiros
+            <CreditCard className="h-5 w-5" /> 
+            Gerenciamento de Cartões
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p>Aqui você pode visualizar relatórios e analisar seus dados financeiros</p>
+          <p>Aqui você pode gerenciar seus cartões de crédito</p>
         </CardContent>
       </Card>
     </div>
   );
 };
 
-export default Relatorios;
+export default Cartoes;
