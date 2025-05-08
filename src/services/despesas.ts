@@ -1,52 +1,43 @@
 
 import { api } from "./api";
-import type { CategoriaDTO } from "./categorias";
-import type { ContaDTO } from "./contas";
 
 export interface DespesaDTO {
-  id?: number;
+  id: number;
   descricao: string;
   valor: number;
   data: string;
-  categoriaId: number;
+  categoria: string;
   contaId: number;
-  anexoUrl?: string;
-  categoria?: CategoriaDTO;
-  conta?: ContaDTO;
+  pago: boolean;
 }
 
 export const DespesasService = {
   listar: async (): Promise<DespesaDTO[]> => {
-    const response = await api.get("/despesas");
+    const response = await api.get("/api/despesas");
+    return response.data;
+  },
+
+  listarPorMesAno: async (mes: number, ano: number): Promise<DespesaDTO[]> => {
+    const response = await api.get(`/api/despesas/mes/${mes}/ano/${ano}`);
     return response.data;
   },
 
   buscarPorId: async (id: number): Promise<DespesaDTO> => {
-    const response = await api.get(`/despesas/${id}`);
-    return response.data;
-  },
-
-  buscarPorDescricao: async (descricao: string): Promise<DespesaDTO[]> => {
-    const response = await api.get(`/despesas/buscar?descricao=${descricao}`);
-    return response.data;
-  },
-
-  buscarPorMesAno: async (mes: number, ano: number): Promise<DespesaDTO[]> => {
-    const response = await api.get(`/despesas/mes/${mes}/ano/${ano}`);
+    const response = await api.get(`/api/despesas/${id}`);
     return response.data;
   },
 
   criar: async (despesa: DespesaDTO): Promise<DespesaDTO> => {
-    const response = await api.post("/despesas", despesa);
+    const response = await api.post("/api/despesas", despesa);
     return response.data;
   },
 
   atualizar: async (id: number, despesa: DespesaDTO): Promise<DespesaDTO> => {
-    const response = await api.put(`/despesas/${id}`, despesa);
+    const response = await api.put(`/api/despesas/${id}`, despesa);
     return response.data;
   },
 
   excluir: async (id: number): Promise<void> => {
-    await api.delete(`/despesas/${id}`);
+    await api.delete(`/api/despesas/${id}`);
   },
 };

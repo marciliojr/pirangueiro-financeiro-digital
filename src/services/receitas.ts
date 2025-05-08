@@ -1,52 +1,43 @@
 
 import { api } from "./api";
-import type { CategoriaDTO } from "./categorias";
-import type { ContaDTO } from "./contas";
 
 export interface ReceitaDTO {
-  id?: number;
+  id: number;
   descricao: string;
   valor: number;
   data: string;
-  categoriaId: number;
+  categoria: string;
   contaId: number;
-  anexoUrl?: string;
-  categoria?: CategoriaDTO;
-  conta?: ContaDTO;
+  recebido: boolean;
 }
 
 export const ReceitasService = {
   listar: async (): Promise<ReceitaDTO[]> => {
-    const response = await api.get("/receitas");
+    const response = await api.get("/api/receitas");
+    return response.data;
+  },
+
+  listarPorMesAno: async (mes: number, ano: number): Promise<ReceitaDTO[]> => {
+    const response = await api.get(`/api/receitas/mes/${mes}/ano/${ano}`);
     return response.data;
   },
 
   buscarPorId: async (id: number): Promise<ReceitaDTO> => {
-    const response = await api.get(`/receitas/${id}`);
-    return response.data;
-  },
-
-  buscarPorDescricao: async (descricao: string): Promise<ReceitaDTO[]> => {
-    const response = await api.get(`/receitas/buscar?descricao=${descricao}`);
-    return response.data;
-  },
-
-  buscarPorMesAno: async (mes: number, ano: number): Promise<ReceitaDTO[]> => {
-    const response = await api.get(`/receitas/mes/${mes}/ano/${ano}`);
+    const response = await api.get(`/api/receitas/${id}`);
     return response.data;
   },
 
   criar: async (receita: ReceitaDTO): Promise<ReceitaDTO> => {
-    const response = await api.post("/receitas", receita);
+    const response = await api.post("/api/receitas", receita);
     return response.data;
   },
 
   atualizar: async (id: number, receita: ReceitaDTO): Promise<ReceitaDTO> => {
-    const response = await api.put(`/receitas/${id}`, receita);
+    const response = await api.put(`/api/receitas/${id}`, receita);
     return response.data;
   },
 
   excluir: async (id: number): Promise<void> => {
-    await api.delete(`/receitas/${id}`);
+    await api.delete(`/api/receitas/${id}`);
   },
 };
