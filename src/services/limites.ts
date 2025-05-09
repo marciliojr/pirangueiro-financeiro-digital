@@ -9,31 +9,31 @@ export interface LimiteGastosDTO {
 
 export const LimitesService = {
   listar: async (): Promise<LimiteGastosDTO[]> => {
-    const response = await api.get("/api/limites-gastos");
+    const response = await api.get("/limites-gastos");
     return response.data;
   },
 
   buscarPorId: async (id: number): Promise<LimiteGastosDTO> => {
-    const response = await api.get(`/api/limites-gastos/${id}`);
+    const response = await api.get(`/limites-gastos/${id}`);
     return response.data;
   },
 
   buscarPorDescricao: async (descricao: string): Promise<LimiteGastosDTO[]> => {
-    const response = await api.get(`/api/limites-gastos/buscar?descricao=${descricao}`);
+    const response = await api.get(`/limites-gastos/buscar?descricao=${descricao}`);
     return response.data;
   },
 
   criar: async (limite: LimiteGastosDTO): Promise<LimiteGastosDTO> => {
-    const response = await api.post("/api/limites-gastos", limite);
+    const response = await api.post("/limites-gastos", limite);
     return response.data;
   },
 
   atualizar: async (id: number, limite: LimiteGastosDTO): Promise<LimiteGastosDTO> => {
-    const response = await api.put(`/api/limites-gastos/${id}`, limite);
+    const response = await api.put(`/limites-gastos/${id}`, limite);
     return response.data;
   },
 
   excluir: async (id: number): Promise<void> => {
-    await api.delete(`/api/limites-gastos/${id}`);
+    await api.delete(`/limites-gastos/${id}`);
   },
 };

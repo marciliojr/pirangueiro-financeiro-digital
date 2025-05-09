@@ -1,4 +1,3 @@
-
 import { Link, useLocation } from "react-router-dom";
 import { 
   Home, 
@@ -15,6 +14,7 @@ import {
 import { useState } from "react";
 import { ThemeToggle } from "./ThemeToggle";
 import { cn } from "@/lib/utils";
+import { useTheme } from "next-themes";
 
 type NavItemProps = {
   to: string;
@@ -42,6 +42,7 @@ const NavItem = ({ to, icon: Icon, label, isCollapsed, isActive }: NavItemProps)
 export const Sidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const { theme } = useTheme();
   
   const navItems = [
     { to: "/", label: "Dashboard", icon: Home },
@@ -67,14 +68,18 @@ export const Sidebar = () => {
     >
       <div className="flex h-16 items-center justify-between border-b border-sidebar-border p-4">
         {!collapsed && (
-          <div className="flex items-center gap-2 text-lg font-semibold text-primary">
+          <div className="flex items-center gap-2 text-lg font-semibold text-sidebar-primary">
             <PiggyBank className="h-6 w-6" />
             <span>PIRANGUEIRO</span>
           </div>
         )}
         <button 
           onClick={toggleSidebar}
-          className="ml-auto flex h-8 w-8 items-center justify-center rounded-full hover:bg-sidebar-accent"
+          className={cn(
+            "ml-auto flex h-8 w-8 items-center justify-center rounded-full transition-colors",
+            "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+            "text-sidebar-foreground"
+          )}
         >
           {collapsed ? <Menu size={18} /> : <X size={18} />}
         </button>
@@ -95,7 +100,11 @@ export const Sidebar = () => {
       
       <div className="flex items-center justify-between border-t border-sidebar-border p-4">
         <div>
-          {!collapsed && <p className="text-xs text-sidebar-foreground">© 2025 Pirangueiro</p>}
+          {!collapsed && (
+            <p className="text-xs text-sidebar-foreground font-medium">
+              © 2025 Pirangueiro
+            </p>
+          )}
         </div>
         <ThemeToggle />
       </div>
