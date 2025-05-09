@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,26 +14,59 @@ const Dashboard = () => {
   const [mes, setMes] = useState<number>(new Date().getMonth() + 1);
   const [ano, setAno] = useState<number>(new Date().getFullYear());
 
-  const { data: receitas = [] } = useQuery({
+  const { data: receitas = [], isLoading: isLoadingReceitas } = useQuery({
     queryKey: ["receitas", mes, ano],
     queryFn: () => ReceitasService.listarPorMesAno(mes, ano),
   });
 
-  const { data: despesas = [] } = useQuery({
+  const { data: despesas = [], isLoading: isLoadingDespesas } = useQuery({
     queryKey: ["despesas", mes, ano],
     queryFn: () => DespesasService.listarPorMesAno(mes, ano),
   });
 
-  const { data: limites = [] } = useQuery({
+  const { data: limites = [], isLoading: isLoadingLimites } = useQuery({
     queryKey: ["limites"],
     queryFn: LimitesService.listar,
   });
 
+  // Garantir que receitas, despesas e limites sejam arrays
+  const receitasArray = Array.isArray(receitas) ? receitas : [];
+  const despesasArray = Array.isArray(despesas) ? despesas : [];
+  const limitesArray = Array.isArray(limites) ? limites : [];
+
   // Cálculos financeiros
-  const totalReceitas = receitas.reduce((acc, receita) => acc + receita.valor, 0);
-  const totalDespesas = despesas.reduce((acc, despesa) => acc + despesa.valor, 0);
+  const totalReceitas = receitasArray.reduce((acc, receita) => acc + receita.valor, 0);
+  const totalDespesas = despesasArray.reduce((acc, despesa) => acc + despesa.valor, 0);
   const saldo = totalReceitas - totalDespesas;
-  const totalLimites = limites.reduce((acc, limite) => acc + limite.valor, 0);
+  const totalLimites = limitesArray.reduce((acc, limite) => acc + limite.valor, 0);
+
+  // Dados para o gráfico de barras
+  const chartData = [
+    { name: 'Jan', receitas: 3000, despesas: 2500 },
+    { name: 'Fev', receitas: 3500, despesas: 2300 },
+    { name: 'Mar', receitas: 3200, despesas: 2800 },
+    { name: 'Abr', receitas: 4000, despesas: 3000 },
+    { name: 'Mai', receitas: 3800, despesas: 2900 },
+    { name: 'Jun', receitas: 4200, despesas: 3100 },
+  ];
+
+  // Preparar dados para o gráfico de pizza
+  const pieData = limitesArray.length > 0
+    ? limitesArray.map(limite => ({
+        name: limite.categoria,
+        value: limite.valor
+      }))
+    : [
+        { name: 'Alimentação', value: 800 },
+        { name: 'Transporte', value: 300 },
+        { name: 'Lazer', value: 500 },
+        { name: 'Saúde', value: 200 }
+      ];
+
+  // Se os dados estiverem carregando, você pode mostrar um indicador de carregamento
+  if (isLoadingReceitas || isLoadingDespesas || isLoadingLimites) {
+    return <div className="container mx-auto py-6">Carregando dados...</div>;
+  }
 
   return (
     <div className="container mx-auto py-6">
@@ -48,7 +80,7 @@ const Dashboard = () => {
           title="Receitas" 
           value={totalReceitas} 
           icon={<TrendingUp className="h-5 w-5" />} 
-          trend={receitas.length > 0 ? '+10%' : '0%'}
+          trend={receitasArray.length > 0 ? '+10%' : '0%'}
           trendUp={true}
           color="bg-emerald-50 dark:bg-emerald-950"
           iconColor="text-emerald-500"
@@ -58,7 +90,7 @@ const Dashboard = () => {
           title="Despesas" 
           value={totalDespesas} 
           icon={<TrendingDown className="h-5 w-5" />} 
-          trend={despesas.length > 0 ? '+5%' : '0%'}
+          trend={despesasArray.length > 0 ? '+5%' : '0%'}
           trendUp={false}
           color="bg-rose-50 dark:bg-rose-950"
           iconColor="text-rose-500"
@@ -88,25 +120,13 @@ const Dashboard = () => {
       <div className="grid gap-4 md:grid-cols-2">
         <ChartContainer 
           title="Receitas vs Despesas" 
-          data={[
-            { name: 'Jan', receitas: 3000, despesas: 2500 },
-            { name: 'Fev', receitas: 3500, despesas: 2300 },
-            { name: 'Mar', receitas: 3200, despesas: 2800 },
-            { name: 'Abr', receitas: 4000, despesas: 3000 },
-            { name: 'Mai', receitas: 3800, despesas: 2900 },
-            { name: 'Jun', receitas: 4200, despesas: 3100 },
-          ]}
+          data={chartData}
           type="bar"
         />
         
         <ChartContainer 
           title="Distribuição de Despesas" 
-          data={
-            limites.map(limite => ({
-              name: limite.categoria,
-              value: limite.valor
-            }))
-          }
+          data={pieData}
           type="pie"
         />
       </div>

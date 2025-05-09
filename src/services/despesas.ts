@@ -1,14 +1,13 @@
-
 import { api } from "./api";
 
 export interface DespesaDTO {
-  id: number;
+  id?: number;
   descricao: string;
   valor: number;
   data: string;
-  categoria: string;
+  categoriaId: number;
   contaId: number;
-  pago: boolean;
+  anexoUrl?: string;
 }
 
 export const DespesasService = {
@@ -24,6 +23,11 @@ export const DespesasService = {
 
   buscarPorId: async (id: number): Promise<DespesaDTO> => {
     const response = await api.get(`/api/despesas/${id}`);
+    return response.data;
+  },
+
+  buscarPorDescricao: async (descricao: string): Promise<DespesaDTO[]> => {
+    const response = await api.get(`/api/despesas/buscar?descricao=${descricao}`);
     return response.data;
   },
 

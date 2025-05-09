@@ -1,14 +1,13 @@
-
 import { api } from "./api";
 
 export interface ReceitaDTO {
-  id: number;
+  id?: number;
   descricao: string;
   valor: number;
   data: string;
-  categoria: string;
+  categoriaId: number;
   contaId: number;
-  recebido: boolean;
+  anexoUrl?: string;
 }
 
 export const ReceitasService = {
@@ -24,6 +23,11 @@ export const ReceitasService = {
 
   buscarPorId: async (id: number): Promise<ReceitaDTO> => {
     const response = await api.get(`/api/receitas/${id}`);
+    return response.data;
+  },
+
+  buscarPorDescricao: async (descricao: string): Promise<ReceitaDTO[]> => {
+    const response = await api.get(`/api/receitas/buscar?descricao=${descricao}`);
     return response.data;
   },
 
