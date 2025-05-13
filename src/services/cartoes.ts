@@ -3,9 +3,9 @@ import { api } from "./api";
 export interface CartaoDTO {
   id?: number;
   nome: string;
-  bandeira: string;
   limite: number;
-  vencimentoFatura: string;
+  diaFechamento: number;
+  diaVencimento: number;
 }
 
 export const CartoesService = {

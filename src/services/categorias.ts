@@ -1,15 +1,26 @@
 import { api } from "./api";
 
+export enum TipoCategoria {
+  RECEITA = "RECEITA",
+  DESPESA = "DESPESA"
+}
+
 export interface CategoriaDTO {
   id?: number;
   nome: string;
-  cor: string;
-  imagemUrl?: string;
+  tipo: TipoCategoria;
+  cor?: string;
+  imagemCategoria?: string;
 }
 
 export const CategoriasService = {
   listar: async (): Promise<CategoriaDTO[]> => {
     const response = await api.get("/categorias");
+    return response.data;
+  },
+
+  listarPorTipo: async (tipo: TipoCategoria): Promise<CategoriaDTO[]> => {
+    const response = await api.get(`/categorias/tipo/${tipo}`);
     return response.data;
   },
 

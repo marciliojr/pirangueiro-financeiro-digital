@@ -1,18 +1,25 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
-import { Home, TrendingUp, TrendingDown, Wallet } from "lucide-react";
+import { Home, TrendingUp, TrendingDown, Wallet, Calendar as CalendarIcon } from "lucide-react";
 import { formatarMoeda } from "@/services/api";
-import { ReceitasService, ReceitaDTO } from "@/services/receitas";
-import { DespesasService, DespesaDTO } from "@/services/despesas";
-import { LimitesService, LimiteGastoDTO } from "@/services/limites";
-import { ChartContainer } from "@/components/dashboard/ChartContainer";
+import { ReceitasService } from "@/services/receitas";
+import { DespesasService } from "@/services/despesas";
+import { LimitesService } from "@/services/limites";
+import { GraficosService } from "@/services/graficos";
 import { FinanceSummaryCard } from "@/components/dashboard/FinanceSummaryCard";
+import { GraficoReceitasDespesas } from "@/components/dashboard/GraficoReceitasDespesas";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 const Dashboard = () => {
-  const [mes, setMes] = useState<number>(new Date().getMonth() + 1);
-  const [ano, setAno] = useState<number>(new Date().getFullYear());
+  const [date, setDate] = useState<Date>(new Date());
+  const mes = date.getMonth() + 1;
+  const ano = date.getFullYear();
 
   const { data: receitas = [], isLoading: isLoadingReceitas } = useQuery({
     queryKey: ["receitas", mes, ano],
@@ -29,6 +36,11 @@ const Dashboard = () => {
     queryFn: LimitesService.listar,
   });
 
+  const { data: dadosGrafico, isLoading: isLoadingGrafico } = useQuery({
+    queryKey: ["grafico-receitas-despesas", mes, ano],
+    queryFn: () => GraficosService.buscarReceitasDespesas(mes, ano),
+  });
+
   // Garantir que receitas, despesas e limites sejam arrays
   const receitasArray = Array.isArray(receitas) ? receitas : [];
   const despesasArray = Array.isArray(despesas) ? despesas : [];
@@ -40,40 +52,37 @@ const Dashboard = () => {
   const saldo = totalReceitas - totalDespesas;
   const totalLimites = limitesArray.reduce((acc, limite) => acc + limite.valor, 0);
 
-  // Dados para o gráfico de barras
-  const chartData = [
-    { name: 'Jan', receitas: 3000, despesas: 2500 },
-    { name: 'Fev', receitas: 3500, despesas: 2300 },
-    { name: 'Mar', receitas: 3200, despesas: 2800 },
-    { name: 'Abr', receitas: 4000, despesas: 3000 },
-    { name: 'Mai', receitas: 3800, despesas: 2900 },
-    { name: 'Jun', receitas: 4200, despesas: 3100 },
-  ];
-
-  // Preparar dados para o gráfico de pizza
-  const pieData = limitesArray.length > 0
-    ? limitesArray.map(limite => ({
-        name: limite.categoria,
-        value: limite.valor
-      }))
-    : [
-        { name: 'Alimentação', value: 800 },
-        { name: 'Transporte', value: 300 },
-        { name: 'Lazer', value: 500 },
-        { name: 'Saúde', value: 200 }
-      ];
-
   // Se os dados estiverem carregando, você pode mostrar um indicador de carregamento
-  if (isLoadingReceitas || isLoadingDespesas || isLoadingLimites) {
+  if (isLoadingReceitas || isLoadingDespesas || isLoadingLimites || isLoadingGrafico) {
     return <div className="container mx-auto py-6">Carregando dados...</div>;
   }
 
   return (
     <div className="container mx-auto py-6">
-      <PageHeader 
-        title="Dashboard" 
-        description="Visão geral das suas finanças" 
-      />
+      <div className="flex justify-between items-center mb-6">
+        <PageHeader 
+          title="Dashboard" 
+          description="Visão geral das suas finanças" 
+        />
+        
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className="w-[240px] justify-start text-left font-normal">
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {format(date, "MMMM 'de' yyyy", { locale: ptBR })}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="end">
+            <Calendar
+              mode="single"
+              selected={date}
+              onSelect={(newDate) => newDate && setDate(newDate)}
+              locale={ptBR}
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
         <FinanceSummaryCard 
@@ -117,19 +126,12 @@ const Dashboard = () => {
         />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <ChartContainer 
-          title="Receitas vs Despesas" 
-          data={chartData}
-          type="bar"
+      {dadosGrafico && (
+        <GraficoReceitasDespesas 
+          receitas={dadosGrafico.receitas} 
+          despesas={dadosGrafico.despesas} 
         />
-        
-        <ChartContainer 
-          title="Distribuição de Despesas" 
-          data={pieData}
-          type="pie"
-        />
-      </div>
+      )}
     </div>
   );
 };

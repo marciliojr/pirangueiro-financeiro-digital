@@ -2,16 +2,15 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { LimitesService, LimiteGastosDTO } from "@/services/limites";
-import { CategoriasService } from "@/services/categorias";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
-import { Plus, Search, Edit, Trash, SlidersHorizontal } from "lucide-react";
+import { Plus, Search, Edit, Trash } from "lucide-react";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { LimiteForm } from "@/components/limites/LimiteForm";
 import { ConfirmDialog } from "@/components/limites/ConfirmDialog";
 import { Card, CardContent } from "@/components/ui/card";
-import { formatCurrency } from "@/lib/utils";
+import { formatarMoeda, formatarData } from "@/services/api";
 
 const Limites = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -26,12 +25,6 @@ const Limites = () => {
     queryFn: () => searchTerm 
       ? LimitesService.buscarPorDescricao(searchTerm)
       : LimitesService.listar(),
-  });
-
-  // Obter categorias para exibir os nomes
-  const { data: categorias = [] } = useQuery({
-    queryKey: ["categorias"],
-    queryFn: () => CategoriasService.listar(),
   });
 
   // Mutação para excluir limite
@@ -59,6 +52,7 @@ const Limites = () => {
   };
 
   const openEditForm = (limite: LimiteGastosDTO) => {
+    console.log("Abrindo formulário de edição para o limite:", limite);
     setCurrentLimite(limite);
     setIsFormOpen(true);
   };
@@ -69,26 +63,26 @@ const Limites = () => {
   };
 
   const handleCloseForm = () => {
+    console.log("Fechando formulário");
     setIsFormOpen(false);
-    setCurrentLimite(null);
+    // Aguardar o fechamento do modal antes de limpar o limite atual
+    setTimeout(() => {
+      setCurrentLimite(null);
+      console.log("Estado após fechar formulário:", { isFormOpen: false, currentLimite: null });
+    }, 100);
   };
 
   const handleFormSubmit = () => {
+    console.log("Formulário submetido, atualizando a lista de limites");
     queryClient.invalidateQueries({ queryKey: ["limites"] });
     setIsFormOpen(false);
-  };
-
-  // Função para obter o nome da categoria pelo ID
-  const getCategoryName = (categoriaId: number) => {
-    const categoria = categorias.find(cat => cat.id === categoriaId);
-    return categoria ? categoria.nome : "Categoria não encontrada";
   };
 
   return (
     <div className="container mx-auto py-6">
       <PageHeader
         title="Limites de Gastos"
-        description="Gerencie seus limites de gastos por categoria"
+        description="Gerencie seus limites de gastos mensais"
         action={
           <Button onClick={openCreateForm}>
             <Plus className="h-4 w-4 mr-2" />
@@ -120,8 +114,8 @@ const Limites = () => {
           <TableHeader>
             <TableRow>
               <TableHead>Descrição</TableHead>
-              <TableHead>Categoria</TableHead>
               <TableHead>Valor Limite</TableHead>
+              <TableHead>Data</TableHead>
               <TableHead className="w-[100px]">Ações</TableHead>
             </TableRow>
           </TableHeader>
@@ -142,8 +136,8 @@ const Limites = () => {
               limites.map((limite) => (
                 <TableRow key={limite.id}>
                   <TableCell className="font-medium">{limite.descricao}</TableCell>
-                  <TableCell>{getCategoryName(limite.categoriaId)}</TableCell>
-                  <TableCell>{formatCurrency(limite.valorLimite)}</TableCell>
+                  <TableCell>{typeof limite.valor === 'number' ? formatarMoeda(limite.valor) : formatarMoeda(0)}</TableCell>
+                  <TableCell>{limite.data ? formatarData(limite.data) : "-"}</TableCell>
                   <TableCell>
                     <div className="flex space-x-2">
                       <Button variant="ghost" size="icon" onClick={() => openEditForm(limite)}>

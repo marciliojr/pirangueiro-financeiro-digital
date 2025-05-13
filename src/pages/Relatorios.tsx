@@ -19,6 +19,8 @@ import {
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CartoesService } from "@/services/cartoes";
+import { ContasService } from "@/services/contas";
 
 // Obter mês e ano atual para o filtro inicial
 const dataAtual = new Date();
@@ -60,10 +62,35 @@ const Relatorios = () => {
     queryFn: () => CategoriasService.listar(),
   });
 
-  // Função para obter o nome da categoria pelo ID
-  const getCategoryName = (categoriaId: number) => {
+  // Obter contas para exibir os nomes
+  const { data: contas = [] } = useQuery({
+    queryKey: ["contas"],
+    queryFn: () => ContasService.listar(),
+  });
+
+  // Obter cartões para exibir os nomes
+  const { data: cartoes = [] } = useQuery({
+    queryKey: ["cartoes"],
+    queryFn: () => CartoesService.listar(),
+  });
+
+  // Funções auxiliares para obter nomes por ID
+  const getCategoryName = (categoriaId?: number) => {
+    if (!categoriaId) return "Categoria não especificada";
     const categoria = categorias.find(cat => cat.id === categoriaId);
     return categoria ? categoria.nome : "Categoria não encontrada";
+  };
+  
+  const getAccountName = (contaId?: number) => {
+    if (!contaId) return "Conta não especificada";
+    const conta = contas.find(acc => acc.id === contaId);
+    return conta ? conta.nome : "Conta não encontrada";
+  };
+  
+  const getCardName = (cartaoId?: number) => {
+    if (!cartaoId) return "-";
+    const cartao = cartoes.find(card => card.id === cartaoId);
+    return cartao ? cartao.nome : "Cartão não encontrado";
   };
 
   // Função para gerar o PDF
@@ -247,6 +274,7 @@ const Relatorios = () => {
                       <TableRow>
                         <TableHead>Descrição</TableHead>
                         <TableHead>Categoria</TableHead>
+                        <TableHead>Conta</TableHead>
                         <TableHead>Data</TableHead>
                         <TableHead className="text-right">Valor</TableHead>
                       </TableRow>
@@ -254,7 +282,7 @@ const Relatorios = () => {
                     <TableBody>
                       {relatorio.receitas.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={4} className="text-center py-6">
+                          <TableCell colSpan={5} className="text-center py-6">
                             Nenhuma receita registrada para este período
                           </TableCell>
                         </TableRow>
@@ -262,7 +290,10 @@ const Relatorios = () => {
                         relatorio.receitas.map((receita) => (
                           <TableRow key={receita.id}>
                             <TableCell className="font-medium">{receita.descricao}</TableCell>
-                            <TableCell>{getCategoryName(receita.categoriaId)}</TableCell>
+                            <TableCell>{receita.categoria ? receita.categoria.nome : 
+                              getCategoryName(receita.categoriaId)}</TableCell>
+                            <TableCell>{receita.conta ? receita.conta.nome : 
+                              getAccountName(receita.contaId)}</TableCell>
                             <TableCell>{new Date(receita.data).toLocaleDateString('pt-BR')}</TableCell>
                             <TableCell className="text-right">{formatCurrency(receita.valor)}</TableCell>
                           </TableRow>
@@ -285,6 +316,8 @@ const Relatorios = () => {
                       <TableRow>
                         <TableHead>Descrição</TableHead>
                         <TableHead>Categoria</TableHead>
+                        <TableHead>Conta</TableHead>
+                        <TableHead>Cartão</TableHead>
                         <TableHead>Data</TableHead>
                         <TableHead className="text-right">Valor</TableHead>
                       </TableRow>
@@ -292,7 +325,7 @@ const Relatorios = () => {
                     <TableBody>
                       {relatorio.despesas.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={4} className="text-center py-6">
+                          <TableCell colSpan={6} className="text-center py-6">
                             Nenhuma despesa registrada para este período
                           </TableCell>
                         </TableRow>
@@ -300,7 +333,12 @@ const Relatorios = () => {
                         relatorio.despesas.map((despesa) => (
                           <TableRow key={despesa.id}>
                             <TableCell className="font-medium">{despesa.descricao}</TableCell>
-                            <TableCell>{getCategoryName(despesa.categoriaId)}</TableCell>
+                            <TableCell>{despesa.categoria ? despesa.categoria.nome : 
+                              getCategoryName(despesa.categoriaId)}</TableCell>
+                            <TableCell>{despesa.conta ? despesa.conta.nome : 
+                              getAccountName(despesa.contaId)}</TableCell>
+                            <TableCell>{despesa.cartao ? despesa.cartao.nome : 
+                              despesa.cartaoId ? getCardName(despesa.cartaoId) : '-'}</TableCell>
                             <TableCell>{new Date(despesa.data).toLocaleDateString('pt-BR')}</TableCell>
                             <TableCell className="text-right">{formatCurrency(despesa.valor)}</TableCell>
                           </TableRow>

@@ -133,12 +133,11 @@ const Categorias = () => {
                   </TableCell>
                   <TableCell className="font-medium">{categoria.nome}</TableCell>
                   <TableCell>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center">
                       <div 
                         className="w-5 h-5 rounded-full" 
                         style={{ backgroundColor: categoria.cor }}
                       ></div>
-                      <span>{categoria.cor}</span>
                     </div>
                   </TableCell>
                   <TableCell>

@@ -68,28 +68,6 @@ const Cartoes = () => {
     setIsFormOpen(false);
   };
 
-  const getBandeiraBadgeColor = (bandeira: string) => {
-    switch (bandeira) {
-      case "VISA": return "bg-blue-600";
-      case "MASTERCARD": return "bg-red-600";
-      case "ELO": return "bg-green-600";
-      case "AMERICAN_EXPRESS": return "bg-purple-600";
-      case "HIPERCARD": return "bg-yellow-600";
-      default: return "bg-gray-600";
-    }
-  };
-
-  const getBandeiraLabel = (bandeira: string) => {
-    switch (bandeira) {
-      case "VISA": return "Visa";
-      case "MASTERCARD": return "Mastercard";
-      case "ELO": return "Elo";
-      case "AMERICAN_EXPRESS": return "American Express";
-      case "HIPERCARD": return "Hipercard";
-      default: return "Outro";
-    }
-  };
-
   return (
     <div className="container mx-auto py-6">
       <PageHeader
@@ -119,13 +97,13 @@ const Cartoes = () => {
         </form>
       </div>
 
-      <div className="border rounded-lg">
+      <div>
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Nome</TableHead>
-              <TableHead>Bandeira</TableHead>
               <TableHead className="text-right">Limite</TableHead>
+              <TableHead>Fechamento</TableHead>
               <TableHead>Vencimento</TableHead>
               <TableHead className="w-[100px]">Ações</TableHead>
             </TableRow>
@@ -133,13 +111,13 @@ const Cartoes = () => {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-10">
+                <TableCell colSpan={4} className="text-center py-10">
                   Carregando...
                 </TableCell>
               </TableRow>
             ) : cartoes.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-10">
+                <TableCell colSpan={4} className="text-center py-10">
                   Nenhum cartão encontrado
                 </TableCell>
               </TableRow>
@@ -152,18 +130,19 @@ const Cartoes = () => {
                       {cartao.nome}
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <Badge className={getBandeiraBadgeColor(cartao.bandeira)}>
-                      {getBandeiraLabel(cartao.bandeira)}
-                    </Badge>
-                  </TableCell>
                   <TableCell className="text-right font-medium">
                     {formatarMoeda(cartao.limite)}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4" />
-                      Dia {cartao.vencimentoFatura}
+                      Dia {cartao.diaFechamento}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      Dia {cartao.diaVencimento}
                     </div>
                   </TableCell>
                   <TableCell>

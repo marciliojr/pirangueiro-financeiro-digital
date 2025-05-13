@@ -1,13 +1,23 @@
 import { api } from "./api";
+import { ContaDTO } from "./contas";
+import { CartaoDTO } from "./cartoes";
+import { CategoriaDTO } from "./categorias";
 
 export interface DespesaDTO {
   id?: number;
   descricao: string;
   valor: number;
   data: string;
-  categoriaId: number;
-  contaId: number;
+  conta?: ContaDTO;
+  cartao?: CartaoDTO;
+  categoria?: CategoriaDTO;
+  anexo?: string;
   anexoUrl?: string;
+  observacao?: string;
+  // Mantendo os IDs para compatibilidade com o código existente
+  categoriaId?: number;
+  contaId?: number;
+  cartaoId?: number;
 }
 
 export const DespesasService = {

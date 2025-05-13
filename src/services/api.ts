@@ -47,3 +47,17 @@ export const uploadArquivo = async (file: File): Promise<string> => {
     }, 1000);
   });
 };
+
+export function formatarValorMonetario(valor: string): string {
+  // Remove tudo que não for número
+  let numero = valor.replace(/\D/g, '');
+  
+  // Converte para número e divide por 100 para ter os centavos
+  const valorNumerico = Number(numero) / 100;
+  
+  // Formata o número para o padrão brasileiro
+  return valorNumerico.toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}

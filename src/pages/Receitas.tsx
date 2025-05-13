@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ReceitasService, ReceitaDTO } from "@/services/receitas";
+import { CategoriasService } from "@/services/categorias";
+import { ContasService } from "@/services/contas";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Plus, Search, Edit, Trash, PiggyBank, FileText } from "lucide-react";
@@ -24,6 +26,18 @@ const Receitas = () => {
     queryFn: () => searchTerm 
       ? ReceitasService.buscarPorDescricao(searchTerm)
       : ReceitasService.listar(),
+  });
+  
+  // Obter categorias para exibir os nomes
+  const { data: categorias = [] } = useQuery({
+    queryKey: ["categorias"],
+    queryFn: () => CategoriasService.listar(),
+  });
+  
+  // Obter contas para exibir os nomes
+  const { data: contas = [] } = useQuery({
+    queryKey: ["contas"],
+    queryFn: () => ContasService.listar(),
   });
 
   // Mutação para excluir receita
@@ -65,6 +79,34 @@ const Receitas = () => {
   const handleFormSubmit = () => {
     queryClient.invalidateQueries({ queryKey: ["receitas"] });
     setIsFormOpen(false);
+  };
+  
+  // Função para obter o nome da categoria pelo ID ou objeto
+  const getCategoryName = (receita: ReceitaDTO) => {
+    if (receita.categoria) {
+      return receita.categoria.nome;
+    }
+    
+    if (receita.categoriaId) {
+      const categoria = categorias.find(cat => cat.id === receita.categoriaId);
+      return categoria ? categoria.nome : "Categoria não encontrada";
+    }
+    
+    return "Categoria não especificada";
+  };
+  
+  // Função para obter o nome da conta pelo ID ou objeto
+  const getAccountName = (receita: ReceitaDTO) => {
+    if (receita.conta) {
+      return receita.conta.nome;
+    }
+    
+    if (receita.contaId) {
+      const conta = contas.find(acc => acc.id === receita.contaId);
+      return conta ? conta.nome : "Conta não encontrada";
+    }
+    
+    return "Conta não especificada";
   };
 
   return (
@@ -127,15 +169,15 @@ const Receitas = () => {
                 <TableRow key={receita.id}>
                   <TableCell className="font-medium">{receita.descricao}</TableCell>
                   <TableCell>{formatarData(receita.data)}</TableCell>
-                  <TableCell>{receita.categoriaId}</TableCell>
-                  <TableCell>{receita.contaId}</TableCell>
+                  <TableCell>{getCategoryName(receita)}</TableCell>
+                  <TableCell>{getAccountName(receita)}</TableCell>
                   <TableCell className="text-right font-medium text-green-600">
                     {formatarMoeda(receita.valor)}
                   </TableCell>
                   <TableCell>
-                    {receita.anexoUrl && (
+                    {(receita.anexo || receita.anexoUrl) && (
                       <a 
-                        href={receita.anexoUrl} 
+                        href={receita.anexo || receita.anexoUrl} 
                         target="_blank" 
                         rel="noopener noreferrer" 
                         className="text-blue-500 hover:underline flex items-center"

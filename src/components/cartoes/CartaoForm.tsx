@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { CartoesService, CartaoDTO } from "@/services/cartoes";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -16,15 +16,30 @@ interface CartaoFormProps {
   onSubmit: () => void;
 }
 
+const meses = [
+  { value: "01", label: "Janeiro" },
+  { value: "02", label: "Fevereiro" },
+  { value: "03", label: "Março" },
+  { value: "04", label: "Abril" },
+  { value: "05", label: "Maio" },
+  { value: "06", label: "Junho" },
+  { value: "07", label: "Julho" },
+  { value: "08", label: "Agosto" },
+  { value: "09", label: "Setembro" },
+  { value: "10", label: "Outubro" },
+  { value: "11", label: "Novembro" },
+  { value: "12", label: "Dezembro" },
+];
+
 export function CartaoForm({ cartao, isOpen, onClose, onSubmit }: CartaoFormProps) {
   const [formData, setFormData] = useState<CartaoDTO>({
     id: cartao?.id || undefined,
     nome: cartao?.nome || "",
-    bandeira: cartao?.bandeira || "VISA",
     limite: cartao?.limite || 0,
-    vencimentoFatura: cartao?.vencimentoFatura || ""
+    diaFechamento: cartao?.diaFechamento || 1,
+    diaVencimento: cartao?.diaVencimento || 1
   });
-  
+
   const queryClient = useQueryClient();
 
   const createMutation = useMutation({
@@ -56,19 +71,18 @@ export function CartaoForm({ cartao, isOpen, onClose, onSubmit }: CartaoFormProp
         ...formData,
         [name]: parseFloat(value) || 0
       });
-    } else {
+    } else if (name === "nome") {
       setFormData({
         ...formData,
         [name]: value
       });
+    } else if (name === "diaFechamento" || name === "diaVencimento") {
+      const dia = Math.min(Math.max(parseInt(value) || 1, 1), 31);
+      setFormData({
+        ...formData,
+        [name]: dia
+      });
     }
-  };
-
-  const handleBandeiraChange = (value: string) => {
-    setFormData({
-      ...formData,
-      bandeira: value
-    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -92,6 +106,9 @@ export function CartaoForm({ cartao, isOpen, onClose, onSubmit }: CartaoFormProp
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>{cartao ? "Editar Cartão" : "Novo Cartão"}</DialogTitle>
+          <DialogDescription>
+            Preencha os dados do cartão de crédito
+          </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
@@ -104,26 +121,6 @@ export function CartaoForm({ cartao, isOpen, onClose, onSubmit }: CartaoFormProp
               onChange={handleChange}
               required
             />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="bandeira">Bandeira</Label>
-            <Select 
-              value={formData.bandeira} 
-              onValueChange={handleBandeiraChange}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione a bandeira" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="VISA">Visa</SelectItem>
-                <SelectItem value="MASTERCARD">Mastercard</SelectItem>
-                <SelectItem value="ELO">Elo</SelectItem>
-                <SelectItem value="AMERICAN_EXPRESS">American Express</SelectItem>
-                <SelectItem value="HIPERCARD">Hipercard</SelectItem>
-                <SelectItem value="OUTRO">Outro</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
           
           <div className="space-y-2">
@@ -140,17 +137,30 @@ export function CartaoForm({ cartao, isOpen, onClose, onSubmit }: CartaoFormProp
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="vencimentoFatura">Dia de Vencimento</Label>
+            <Label htmlFor="diaFechamento">Dia do Fechamento</Label>
             <Input
-              id="vencimentoFatura"
-              name="vencimentoFatura"
+              id="diaFechamento"
+              name="diaFechamento"
               type="number"
               min="1"
               max="31"
-              value={formData.vencimentoFatura}
+              value={formData.diaFechamento}
               onChange={handleChange}
               required
-              placeholder="Dia do mês (1-31)"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="diaVencimento">Dia do Vencimento</Label>
+            <Input
+              id="diaVencimento"
+              name="diaVencimento"
+              type="number"
+              min="1"
+              max="31"
+              value={formData.diaVencimento}
+              onChange={handleChange}
+              required
             />
           </div>
           

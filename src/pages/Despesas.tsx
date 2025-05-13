@@ -2,6 +2,9 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { DespesasService, DespesaDTO } from "@/services/despesas";
+import { CategoriasService } from "@/services/categorias";
+import { ContasService } from "@/services/contas";
+import { CartoesService } from "@/services/cartoes";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Plus, Search, Edit, Trash, FileText } from "lucide-react";
@@ -24,6 +27,24 @@ const Despesas = () => {
     queryFn: () => searchTerm 
       ? DespesasService.buscarPorDescricao(searchTerm)
       : DespesasService.listar(),
+  });
+  
+  // Obter categorias para exibir os nomes
+  const { data: categorias = [] } = useQuery({
+    queryKey: ["categorias"],
+    queryFn: () => CategoriasService.listar(),
+  });
+  
+  // Obter contas para exibir os nomes
+  const { data: contas = [] } = useQuery({
+    queryKey: ["contas"],
+    queryFn: () => ContasService.listar(),
+  });
+
+  // Obter cartões para exibir os nomes
+  const { data: cartoes = [] } = useQuery({
+    queryKey: ["cartoes"],
+    queryFn: () => CartoesService.listar(),
   });
 
   // Mutação para excluir despesa
@@ -66,6 +87,48 @@ const Despesas = () => {
     queryClient.invalidateQueries({ queryKey: ["despesas"] });
     setIsFormOpen(false);
   };
+  
+  // Função para obter o nome da categoria pelo ID ou objeto
+  const getCategoryName = (despesa: DespesaDTO) => {
+    if (despesa.categoria) {
+      return despesa.categoria.nome;
+    }
+    
+    if (despesa.categoriaId) {
+      const categoria = categorias.find(cat => cat.id === despesa.categoriaId);
+      return categoria ? categoria.nome : "Categoria não encontrada";
+    }
+    
+    return "Categoria não especificada";
+  };
+  
+  // Função para obter o nome da conta pelo ID ou objeto
+  const getAccountName = (despesa: DespesaDTO) => {
+    if (despesa.conta) {
+      return despesa.conta.nome;
+    }
+    
+    if (despesa.contaId) {
+      const conta = contas.find(acc => acc.id === despesa.contaId);
+      return conta ? conta.nome : "Conta não encontrada";
+    }
+    
+    return "Conta não especificada";
+  };
+
+  // Função para obter o nome do cartão pelo ID ou objeto
+  const getCardName = (despesa: DespesaDTO) => {
+    if (despesa.cartao) {
+      return despesa.cartao.nome;
+    }
+    
+    if (despesa.cartaoId) {
+      const cartao = cartoes.find(card => card.id === despesa.cartaoId);
+      return cartao ? cartao.nome : "Cartão não encontrado";
+    }
+    
+    return "-"; // Retorna "-" se não houver cartão
+  };
 
   return (
     <div className="container mx-auto py-6">
@@ -104,6 +167,7 @@ const Despesas = () => {
               <TableHead>Data</TableHead>
               <TableHead>Categoria</TableHead>
               <TableHead>Conta</TableHead>
+              <TableHead>Cartão</TableHead>
               <TableHead className="text-right">Valor</TableHead>
               <TableHead>Anexo</TableHead>
               <TableHead className="w-[100px]">Ações</TableHead>
@@ -112,13 +176,13 @@ const Despesas = () => {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-10">
+                <TableCell colSpan={8} className="text-center py-10">
                   Carregando...
                 </TableCell>
               </TableRow>
             ) : despesas.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-10">
+                <TableCell colSpan={8} className="text-center py-10">
                   Nenhuma despesa encontrada
                 </TableCell>
               </TableRow>
@@ -127,15 +191,16 @@ const Despesas = () => {
                 <TableRow key={despesa.id}>
                   <TableCell className="font-medium">{despesa.descricao}</TableCell>
                   <TableCell>{formatarData(despesa.data)}</TableCell>
-                  <TableCell>{despesa.categoriaId}</TableCell>
-                  <TableCell>{despesa.contaId}</TableCell>
+                  <TableCell>{getCategoryName(despesa)}</TableCell>
+                  <TableCell>{getAccountName(despesa)}</TableCell>
+                  <TableCell>{getCardName(despesa)}</TableCell>
                   <TableCell className="text-right font-medium text-red-600">
                     {formatarMoeda(despesa.valor)}
                   </TableCell>
                   <TableCell>
-                    {despesa.anexoUrl && (
+                    {(despesa.anexo || despesa.anexoUrl) && (
                       <a 
-                        href={despesa.anexoUrl} 
+                        href={despesa.anexo || despesa.anexoUrl} 
                         target="_blank" 
                         rel="noopener noreferrer" 
                         className="text-blue-500 hover:underline flex items-center"

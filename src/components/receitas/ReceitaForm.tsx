@@ -2,12 +2,15 @@ import { useState, useEffect } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ReceitasService, ReceitaDTO } from "@/services/receitas";
-import { uploadArquivo, formatarData, formatarMoeda } from "@/services/api";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { CategoriasService, CategoriaDTO } from "@/services/categorias";
+import { ContasService, ContaDTO } from "@/services/contas";
+import { uploadArquivo, formatarData, formatarMoeda, formatarValorMonetario } from "@/services/api";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { Upload, Loader2, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -19,51 +22,43 @@ interface ReceitaFormProps {
   onSubmit: () => void;
 }
 
-interface Categoria {
-  id: number;
-  nome: string;
-}
-
-interface Conta {
-  id: number;
-  nome: string;
-}
-
 export function ReceitaForm({ receita, isOpen, onClose, onSubmit }: ReceitaFormProps) {
   const [formData, setFormData] = useState<ReceitaDTO>({
     id: receita?.id || undefined,
     descricao: receita?.descricao || "",
     valor: receita?.valor || 0,
     data: receita?.data || format(new Date(), "yyyy-MM-dd"),
-    categoriaId: receita?.categoriaId || 1,
-    contaId: receita?.contaId || 1,
-    anexoUrl: receita?.anexoUrl || ""
+    categoriaId: receita?.categoriaId || receita?.categoria?.id,
+    contaId: receita?.contaId || receita?.conta?.id,
+    anexoUrl: receita?.anexoUrl || receita?.anexo || "",
+    observacao: receita?.observacao || ""
   });
-  const [valorFormatado, setValorFormatado] = useState(formData.valor ? formData.valor.toFixed(2).replace('.', ',') : '0,00');
+  const [valorFormatado, setValorFormatado] = useState(formData.valor ? formatarValorMonetario(formData.valor.toString()) : '0,00');
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   
   const queryClient = useQueryClient();
 
   // Buscar categorias e contas para os selects
-  const { data: categorias = [] } = useQuery<Categoria[]>({
+  const { data: categorias = [] } = useQuery<CategoriaDTO[]>({
     queryKey: ["categorias"],
-    queryFn: async () => {
-      const response = await fetch("/api/categorias");
-      return response.json();
-    },
+    queryFn: () => CategoriasService.listar(),
   });
 
-  const { data: contas = [] } = useQuery<Conta[]>({
+  const { data: contas = [] } = useQuery<ContaDTO[]>({
     queryKey: ["contas"],
-    queryFn: async () => {
-      const response = await fetch("/api/contas");
-      return response.json();
-    },
+    queryFn: () => ContasService.listar(),
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: ReceitaDTO) => ReceitasService.criar(data),
+    mutationFn: (data: ReceitaDTO) => {
+      const receitaData = {
+        ...data,
+        conta: data.contaId ? contas.find(c => c.id === data.contaId) : undefined,
+        categoria: data.categoriaId ? categorias.find(c => c.id === data.categoriaId) : undefined
+      };
+      return ReceitasService.criar(receitaData);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["receitas"] });
       toast.success("Receita criada com sucesso!");
@@ -73,8 +68,12 @@ export function ReceitaForm({ receita, isOpen, onClose, onSubmit }: ReceitaFormP
 
   const updateMutation = useMutation({
     mutationFn: (data: ReceitaDTO) => {
-      if (!data.id) throw new Error("ID não fornecido para atualização");
-      return ReceitasService.atualizar(data.id, data);
+      const receitaData = {
+        ...data,
+        conta: data.contaId ? contas.find(c => c.id === data.contaId) : undefined,
+        categoria: data.categoriaId ? categorias.find(c => c.id === data.categoriaId) : undefined
+      };
+      return ReceitasService.atualizar(data.id!, receitaData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["receitas"] });
@@ -83,7 +82,7 @@ export function ReceitaForm({ receita, isOpen, onClose, onSubmit }: ReceitaFormP
     },
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     
     if (name === "valor") {
@@ -97,33 +96,26 @@ export function ReceitaForm({ receita, isOpen, onClose, onSubmit }: ReceitaFormP
   };
 
   const handleValorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
+    const valorFormatado = formatarValorMonetario(e.target.value);
+    setValorFormatado(valorFormatado);
     
-    // Remove tudo exceto números e vírgula
-    let valorLimpo = value.replace(/[^\d,]/g, '');
-    
-    // Garante que há no máximo uma vírgula
-    const partes = valorLimpo.split(',');
-    if (partes.length > 2) {
-      valorLimpo = partes[0] + ',' + partes[1];
-    }
-    
-    // Formata o valor
-    setValorFormatado(valorLimpo);
-    
-    // Atualiza o formData com o valor numérico
-    const valorNumerico = parseFloat(valorLimpo.replace(',', '.')) || 0;
-    setFormData({
-      ...formData,
-      valor: valorNumerico
-    });
+    // Converte o valor formatado para número
+    const valorNumerico = Number(e.target.value.replace(/\D/g, '')) / 100;
+    setFormData(prev => ({ ...prev, valor: valorNumerico }));
   };
 
   const handleSelectChange = (name: string, value: string) => {
-    setFormData({
-      ...formData,
-      [name]: parseInt(value)
-    });
+    if (!value || value === "null" || value === "") {
+      setFormData(prev => ({
+        ...prev,
+        [name]: undefined
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: Number(value)
+      }));
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -137,24 +129,39 @@ export function ReceitaForm({ receita, isOpen, onClose, onSubmit }: ReceitaFormP
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!formData.categoriaId) {
+      toast.error("Por favor, selecione uma categoria");
+      return;
+    }
+
+    if (!formData.contaId) {
+      toast.error("Por favor, selecione uma conta");
+      return;
+    }
+
     try {
-      const updatedFormData = { ...formData };
-      
-      // Upload de arquivo, se selecionado
+      setIsUploading(true);
+      let anexoUrl = formData.anexoUrl;
+
       if (file) {
-        setIsUploading(true);
-        const anexoUrl = await uploadArquivo(file);
-        updatedFormData.anexoUrl = anexoUrl;
-        setIsUploading(false);
+        anexoUrl = await uploadArquivo(file);
       }
-      
+
+      const receitaData = {
+        ...formData,
+        anexoUrl,
+        valor: Number(valorFormatado.replace(/\D/g, "")) / 100,
+      };
+
       if (receita?.id) {
-        updateMutation.mutate(updatedFormData);
+        await updateMutation.mutateAsync(receitaData);
       } else {
-        createMutation.mutate(updatedFormData);
+        await createMutation.mutateAsync(receitaData);
       }
     } catch (error) {
+      console.error("Erro ao salvar receita:", error);
       toast.error("Erro ao salvar receita");
+    } finally {
       setIsUploading(false);
     }
   };
@@ -166,6 +173,9 @@ export function ReceitaForm({ receita, isOpen, onClose, onSubmit }: ReceitaFormP
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>{receita ? "Editar Receita" : "Nova Receita"}</DialogTitle>
+          <DialogDescription>
+            Preencha os dados da receita abaixo.
+          </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
@@ -211,15 +221,16 @@ export function ReceitaForm({ receita, isOpen, onClose, onSubmit }: ReceitaFormP
           <div className="space-y-2">
             <Label htmlFor="categoriaId">Categoria</Label>
             <Select 
-              value={String(formData.categoriaId)} 
+              value={formData.categoriaId ? String(formData.categoriaId) : undefined}
               onValueChange={(value) => handleSelectChange("categoriaId", value)}
+              required
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione a categoria" />
               </SelectTrigger>
               <SelectContent>
                 {categorias.map((categoria) => (
-                  <SelectItem key={categoria.id} value={String(categoria.id)}>
+                  <SelectItem key={categoria.id} value={String(categoria.id!)}>
                     {categoria.nome}
                   </SelectItem>
                 ))}
@@ -230,15 +241,16 @@ export function ReceitaForm({ receita, isOpen, onClose, onSubmit }: ReceitaFormP
           <div className="space-y-2">
             <Label htmlFor="contaId">Conta</Label>
             <Select 
-              value={String(formData.contaId)} 
+              value={formData.contaId ? String(formData.contaId) : undefined}
               onValueChange={(value) => handleSelectChange("contaId", value)}
+              required
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione a conta" />
               </SelectTrigger>
               <SelectContent>
                 {contas.map((conta) => (
-                  <SelectItem key={conta.id} value={String(conta.id)}>
+                  <SelectItem key={conta.id} value={String(conta.id!)}>
                     {conta.nome}
                   </SelectItem>
                 ))}
@@ -248,30 +260,7 @@ export function ReceitaForm({ receita, isOpen, onClose, onSubmit }: ReceitaFormP
           
           <div className="space-y-2">
             <Label htmlFor="anexo">Anexo</Label>
-            
-            {formData.anexoUrl && (
-              <div className="mb-2 flex items-center space-x-2">
-                <FileText className="h-5 w-5" />
-                <a 
-                  href={formData.anexoUrl} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-sm text-blue-500 hover:underline"
-                >
-                  Ver anexo atual
-                </a>
-              </div>
-            )}
-            
-            <div className="flex items-center space-x-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => document.getElementById("anexo")?.click()}
-              >
-                <Upload className="h-4 w-4 mr-2" />
-                Escolher Arquivo
-              </Button>
+            <div className="flex items-center gap-2">
               <Input
                 id="anexo"
                 name="anexo"
@@ -279,17 +268,52 @@ export function ReceitaForm({ receita, isOpen, onClose, onSubmit }: ReceitaFormP
                 onChange={handleFileChange}
                 className="hidden"
               />
-              {file && <span className="text-sm">{file.name}</span>}
+              <Label
+                htmlFor="anexo"
+                className="flex items-center gap-2 px-4 py-2 border rounded-md hover:bg-gray-50 cursor-pointer"
+              >
+                <Upload className="h-4 w-4" />
+                <span>Escolher arquivo</span>
+              </Label>
+              {file && <span className="text-sm text-gray-600">{file.name}</span>}
+              {!file && formData.anexoUrl && (
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  <a 
+                    href={formData.anexoUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="text-blue-500 hover:underline text-sm"
+                  >
+                    Ver anexo atual
+                  </a>
+                </div>
+              )}
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="observacao">Observação</Label>
+            <Textarea
+              id="observacao"
+              name="observacao"
+              value={formData.observacao}
+              onChange={handleChange}
+              placeholder="Observações sobre esta receita (opcional)"
+              rows={3}
+            />
           </div>
           
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {receita ? "Atualizar" : "Criar"}
+            <Button 
+              type="submit" 
+              disabled={isSubmitting}
+              className="w-full"
+            >
+              {isSubmitting && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Salvar
             </Button>
           </DialogFooter>
         </form>

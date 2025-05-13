@@ -3,8 +3,8 @@ import { api } from "./api";
 export interface LimiteGastosDTO {
   id?: number;
   descricao: string;
-  valorLimite: number;
-  categoriaId: number;
+  valor: number;
+  data: string;
 }
 
 export const LimitesService = {
@@ -24,13 +24,31 @@ export const LimitesService = {
   },
 
   criar: async (limite: LimiteGastosDTO): Promise<LimiteGastosDTO> => {
+    console.log("Criando limite:", limite);
     const response = await api.post("/limites-gastos", limite);
     return response.data;
   },
 
   atualizar: async (id: number, limite: LimiteGastosDTO): Promise<LimiteGastosDTO> => {
-    const response = await api.put(`/limites-gastos/${id}`, limite);
-    return response.data;
+    console.log(`Enviando PUT para /limites-gastos/${id}`, limite);
+    
+    // Garantir que o objeto a ser enviado tenha a estrutura correta
+    const payload = {
+      descricao: limite.descricao,
+      valor: limite.valor,
+      data: limite.data,
+      // Incluir o ID explicitamente
+      id: id
+    };
+    
+    try {
+      const response = await api.put(`/limites-gastos/${id}`, payload);
+      console.log("Resposta da atualização:", response.data);
+      return response.data;
+    } catch (error) {
+      console.error("Erro na atualização do limite:", error);
+      throw error;
+    }
   },
 
   excluir: async (id: number): Promise<void> => {
