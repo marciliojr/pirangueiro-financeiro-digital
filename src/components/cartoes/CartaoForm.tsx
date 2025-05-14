@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
+import { formatarValorMonetario } from "@/services/api";
 
 interface CartaoFormProps {
   cartao: CartaoDTO | null;
@@ -39,6 +40,7 @@ export function CartaoForm({ cartao, isOpen, onClose, onSubmit }: CartaoFormProp
     diaFechamento: cartao?.diaFechamento || 1,
     diaVencimento: cartao?.diaVencimento || 1
   });
+  const [limiteFormatado, setLimiteFormatado] = useState(formData.limite ? formatarValorMonetario(formData.limite.toString()) : '0,00');
 
   const queryClient = useQueryClient();
 
@@ -67,10 +69,7 @@ export function CartaoForm({ cartao, isOpen, onClose, onSubmit }: CartaoFormProp
     const { name, value } = e.target;
     
     if (name === "limite") {
-      setFormData({
-        ...formData,
-        [name]: parseFloat(value) || 0
-      });
+      // Não fazemos nada aqui, pois o valor é tratado no handleLimiteChange
     } else if (name === "nome") {
       setFormData({
         ...formData,
@@ -83,6 +82,15 @@ export function CartaoForm({ cartao, isOpen, onClose, onSubmit }: CartaoFormProp
         [name]: dia
       });
     }
+  };
+
+  const handleLimiteChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const valorFormatado = formatarValorMonetario(e.target.value);
+    setLimiteFormatado(valorFormatado);
+    
+    // Converte o valor formatado para número
+    const valorNumerico = Number(e.target.value.replace(/\D/g, '')) / 100;
+    setFormData(prev => ({ ...prev, limite: valorNumerico }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -125,15 +133,18 @@ export function CartaoForm({ cartao, isOpen, onClose, onSubmit }: CartaoFormProp
           
           <div className="space-y-2">
             <Label htmlFor="limite">Limite</Label>
-            <Input
-              id="limite"
-              name="limite"
-              type="number"
-              step="0.01"
-              value={formData.limite}
-              onChange={handleChange}
-              required
-            />
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">R$</span>
+              <Input
+                id="limite"
+                name="limite"
+                value={limiteFormatado}
+                onChange={handleLimiteChange}
+                className="pl-10"
+                placeholder="0,00"
+                required
+              />
+            </div>
           </div>
           
           <div className="space-y-2">

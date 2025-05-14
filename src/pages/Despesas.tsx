@@ -7,18 +7,26 @@ import { ContasService } from "@/services/contas";
 import { CartoesService } from "@/services/cartoes";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
-import { Plus, Search, Edit, Trash, FileText } from "lucide-react";
+import { Plus, Search, Edit, Trash, FileText, ArrowUpDown, ArrowUp, ArrowDown, FileDown } from "lucide-react";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { formatarMoeda, formatarData } from "@/services/api";
 import { DespesaForm } from "@/components/despesas/DespesaForm";
 import { ConfirmDialog } from "@/components/despesas/ConfirmDialog";
+import { cn } from "@/lib/utils";
+import jsPDF from "jspdf";
+import autoTable, { UserOptions } from "jspdf-autotable";
+
+type SortField = 'descricao' | 'data' | 'categoria' | 'conta' | 'cartao' | 'valor';
+type SortOrder = 'asc' | 'desc';
 
 const Despesas = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [currentDespesa, setCurrentDespesa] = useState<DespesaDTO | null>(null);
+  const [sortField, setSortField] = useState<SortField>('data');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const queryClient = useQueryClient();
 
   // Obter lista de despesas
@@ -130,16 +138,145 @@ const Despesas = () => {
     return "-"; // Retorna "-" se não houver cartão
   };
 
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('asc');
+    }
+  };
+
+  const sortDespesas = (despesas: DespesaDTO[]) => {
+    return [...despesas].sort((a, b) => {
+      let comparison = 0;
+      
+      switch (sortField) {
+        case 'descricao':
+          comparison = a.descricao.localeCompare(b.descricao);
+          break;
+        case 'data':
+          comparison = new Date(a.data).getTime() - new Date(b.data).getTime();
+          break;
+        case 'categoria':
+          comparison = getCategoryName(a).localeCompare(getCategoryName(b));
+          break;
+        case 'conta':
+          comparison = getAccountName(a).localeCompare(getAccountName(b));
+          break;
+        case 'cartao':
+          comparison = getCardName(a).localeCompare(getCardName(b));
+          break;
+        case 'valor':
+          comparison = a.valor - b.valor;
+          break;
+      }
+
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+  };
+
+  const SortButton = ({ field, label, className }: { field: SortField; label: string; className?: string }) => {
+    const isActive = sortField === field;
+    const icon = isActive
+      ? sortOrder === 'asc'
+        ? <ArrowUp className="ml-2 h-4 w-4" />
+        : <ArrowDown className="ml-2 h-4 w-4" />
+      : <ArrowUpDown className="ml-2 h-4 w-4 opacity-50" />;
+
+    return (
+      <Button
+        variant="ghost"
+        className={cn(
+          "p-0 h-8 hover:bg-transparent flex items-center justify-between w-full",
+          isActive && "text-primary font-medium",
+          className
+        )}
+        onClick={() => handleSort(field)}
+      >
+        <span>{label}</span>
+        {icon}
+      </Button>
+    );
+  };
+
+  const exportarPDF = () => {
+    const doc = new jsPDF();
+    
+    // Configurar fonte para suportar caracteres especiais
+    doc.setFont("helvetica");
+    
+    // Adicionar título
+    doc.setFontSize(20);
+    doc.text("Extrato de Despesas", 14, 20);
+    
+    // Adicionar data de geração
+    doc.setFontSize(10);
+    doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 14, 30);
+    
+    // Preparar dados para a tabela
+    const dadosTabela = sortDespesas(despesas).map(despesa => [
+      despesa.descricao,
+      formatarData(despesa.data),
+      getCategoryName(despesa),
+      getAccountName(despesa),
+      getCardName(despesa),
+      formatarMoeda(despesa.valor)
+    ]);
+    
+    // Configurar e gerar a tabela
+    const tableOptions: UserOptions = {
+      head: [['Descrição', 'Data', 'Categoria', 'Conta', 'Cartão', 'Valor']],
+      body: dadosTabela,
+      startY: 40,
+      theme: 'striped',
+      headStyles: { fillColor: [66, 135, 245] },
+      styles: { 
+        fontSize: 8,
+        cellPadding: 2
+      },
+      columnStyles: {
+        0: { cellWidth: 40 },
+        1: { cellWidth: 20 },
+        2: { cellWidth: 30 },
+        3: { cellWidth: 30 },
+        4: { cellWidth: 30 },
+        5: { cellWidth: 25, halign: 'right' }
+      }
+    };
+    
+    autoTable(doc, tableOptions);
+    
+    // Adicionar total
+    const totalDespesas = despesas.reduce((acc, despesa) => acc + despesa.valor, 0);
+    const finalY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY || 40;
+    
+    doc.setFont("helvetica", "bold");
+    doc.text(`Total: ${formatarMoeda(totalDespesas)}`, 170, finalY + 10, { align: "right" });
+    
+    // Salvar o PDF
+    const dataHoje = new Date().toISOString().split('T')[0];
+    doc.save(`extrato_despesas_${dataHoje}.pdf`);
+    
+    toast.success("Extrato de despesas exportado com sucesso!");
+  };
+
   return (
     <div className="container mx-auto py-6">
       <PageHeader
         title="Despesas"
         description="Gerencie suas despesas financeiras"
         action={
-          <Button onClick={openCreateForm}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nova Despesa
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={openCreateForm}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nova Despesa
+            </Button>
+            <Button variant="outline" onClick={exportarPDF}>
+              <FileDown className="h-4 w-4 mr-2" />
+              Exportar PDF
+            </Button>
+          </div>
         }
       />
 
@@ -163,12 +300,24 @@ const Despesas = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Descrição</TableHead>
-              <TableHead>Data</TableHead>
-              <TableHead>Categoria</TableHead>
-              <TableHead>Conta</TableHead>
-              <TableHead>Cartão</TableHead>
-              <TableHead className="text-right">Valor</TableHead>
+              <TableHead>
+                <SortButton field="descricao" label="Descrição" />
+              </TableHead>
+              <TableHead>
+                <SortButton field="data" label="Data" />
+              </TableHead>
+              <TableHead>
+                <SortButton field="categoria" label="Categoria" />
+              </TableHead>
+              <TableHead>
+                <SortButton field="conta" label="Conta" />
+              </TableHead>
+              <TableHead>
+                <SortButton field="cartao" label="Cartão" />
+              </TableHead>
+              <TableHead className="text-right">
+                <SortButton field="valor" label="Valor" className="justify-end" />
+              </TableHead>
               <TableHead>Anexo</TableHead>
               <TableHead className="w-[100px]">Ações</TableHead>
             </TableRow>
@@ -187,7 +336,7 @@ const Despesas = () => {
                 </TableCell>
               </TableRow>
             ) : (
-              despesas.map((despesa) => (
+              sortDespesas(despesas).map((despesa) => (
                 <TableRow key={despesa.id}>
                   <TableCell className="font-medium">{despesa.descricao}</TableCell>
                   <TableCell>{formatarData(despesa.data)}</TableCell>
@@ -211,12 +360,20 @@ const Despesas = () => {
                     )}
                   </TableCell>
                   <TableCell>
-                    <div className="flex space-x-2">
-                      <Button variant="ghost" size="icon" onClick={() => openEditForm(despesa)}>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => openEditForm(despesa)}
+                      >
                         <Edit className="h-4 w-4" />
                         <span className="sr-only">Editar</span>
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => openDeleteDialog(despesa)}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => openDeleteDialog(despesa)}
+                      >
                         <Trash className="h-4 w-4" />
                         <span className="sr-only">Excluir</span>
                       </Button>

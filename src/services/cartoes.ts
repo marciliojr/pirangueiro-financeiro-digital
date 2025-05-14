@@ -8,6 +8,18 @@ export interface CartaoDTO {
   diaVencimento: number;
 }
 
+export interface DespesaDTO {
+  id?: number;
+  descricao: string;
+  valor: number;
+  data: string;
+  categoriaId?: number;
+  categoria?: {
+    id: number;
+    nome: string;
+  };
+}
+
 export const CartoesService = {
   listar: async (): Promise<CartaoDTO[]> => {
     const response = await api.get("/cartoes");
@@ -37,4 +49,9 @@ export const CartoesService = {
   excluir: async (id: number): Promise<void> => {
     await api.delete(`/cartoes/${id}`);
   },
+
+  buscarFatura: async (id: number, mes: number, ano: number): Promise<DespesaDTO[]> => {
+    const response = await api.get(`/cartoes/${id}/despesas/fatura?mes=${mes}&ano=${ano}`);
+    return response.data;
+  }
 }; 

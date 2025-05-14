@@ -6,12 +6,14 @@ import { CategoriasService } from "@/services/categorias";
 import { ContasService } from "@/services/contas";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
-import { Plus, Search, Edit, Trash, PiggyBank, FileText } from "lucide-react";
+import { Plus, Search, Edit, Trash, PiggyBank, FileText, FileDown } from "lucide-react";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { formatarMoeda, formatarData } from "@/services/api";
 import { ReceitaForm } from "@/components/receitas/ReceitaForm";
 import { ConfirmDialog } from "@/components/receitas/ConfirmDialog";
+import jsPDF from "jspdf";
+import autoTable, { UserOptions } from "jspdf-autotable";
 
 const Receitas = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -109,16 +111,81 @@ const Receitas = () => {
     return "Conta não especificada";
   };
 
+  const exportarPDF = () => {
+    const doc = new jsPDF();
+    
+    // Configurar fonte para suportar caracteres especiais
+    doc.setFont("helvetica");
+    
+    // Adicionar título
+    doc.setFontSize(20);
+    doc.text("Extrato de Receitas", 14, 20);
+    
+    // Adicionar data de geração
+    doc.setFontSize(10);
+    doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 14, 30);
+    
+    // Preparar dados para a tabela
+    const dadosTabela = receitas.map(receita => [
+      receita.descricao,
+      formatarData(receita.data),
+      getCategoryName(receita),
+      getAccountName(receita),
+      formatarMoeda(receita.valor)
+    ]);
+    
+    // Configurar e gerar a tabela
+    const tableOptions: UserOptions = {
+      head: [['Descrição', 'Data', 'Categoria', 'Conta', 'Valor']],
+      body: dadosTabela,
+      startY: 40,
+      theme: 'striped',
+      headStyles: { fillColor: [34, 197, 94] }, // Cor verde para receitas
+      styles: { 
+        fontSize: 8,
+        cellPadding: 2
+      },
+      columnStyles: {
+        0: { cellWidth: 50 },
+        1: { cellWidth: 25 },
+        2: { cellWidth: 35 },
+        3: { cellWidth: 35 },
+        4: { cellWidth: 30, halign: 'right' }
+      }
+    };
+    
+    autoTable(doc, tableOptions);
+    
+    // Adicionar total
+    const totalReceitas = receitas.reduce((acc, receita) => acc + receita.valor, 0);
+    const finalY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY || 40;
+    
+    doc.setFont("helvetica", "bold");
+    doc.text(`Total: ${formatarMoeda(totalReceitas)}`, 170, finalY + 10, { align: "right" });
+    
+    // Salvar o PDF
+    const dataHoje = new Date().toISOString().split('T')[0];
+    doc.save(`extrato_Receitas_${dataHoje}.pdf`);
+    
+    toast.success("Extrato de receitas exportado com sucesso!");
+  };
+
   return (
     <div className="container mx-auto py-6">
       <PageHeader
         title="Receitas"
         description="Gerencie suas receitas financeiras"
         action={
-          <Button onClick={openCreateForm}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nova Receita
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={openCreateForm}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nova Receita
+            </Button>
+            <Button variant="outline" onClick={exportarPDF}>
+              <FileDown className="h-4 w-4 mr-2" />
+              Exportar PDF
+            </Button>
+          </div>
         }
       />
 

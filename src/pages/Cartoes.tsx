@@ -4,18 +4,20 @@ import { toast } from "sonner";
 import { CartoesService, CartaoDTO } from "@/services/cartoes";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
-import { Plus, Search, Edit, Trash, Calendar, CreditCard as CardIcon } from "lucide-react";
+import { Plus, Search, Edit, Trash, Calendar, CreditCard as CardIcon, FileText } from "lucide-react";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { formatarMoeda } from "@/services/api";
 import { CartaoForm } from "@/components/cartoes/CartaoForm";
 import { ConfirmDialog } from "@/components/cartoes/ConfirmDialog";
+import { FaturaModal } from "@/components/cartoes/FaturaModal";
 import { Badge } from "@/components/ui/badge";
 
 const Cartoes = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isFaturaModalOpen, setIsFaturaModalOpen] = useState(false);
   const [currentCartao, setCurrentCartao] = useState<CartaoDTO | null>(null);
   const queryClient = useQueryClient();
 
@@ -58,6 +60,11 @@ const Cartoes = () => {
     setIsDeleteDialogOpen(true);
   };
 
+  const openFaturaModal = (cartao: CartaoDTO) => {
+    setCurrentCartao(cartao);
+    setIsFaturaModalOpen(true);
+  };
+
   const handleCloseForm = () => {
     setIsFormOpen(false);
     setCurrentCartao(null);
@@ -97,7 +104,7 @@ const Cartoes = () => {
         </form>
       </div>
 
-      <div>
+      <div className="border rounded-lg">
         <Table>
           <TableHeader>
             <TableRow>
@@ -105,19 +112,20 @@ const Cartoes = () => {
               <TableHead className="text-right">Limite</TableHead>
               <TableHead>Fechamento</TableHead>
               <TableHead>Vencimento</TableHead>
+              <TableHead>Fatura</TableHead>
               <TableHead className="w-[100px]">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-10">
+                <TableCell colSpan={6} className="text-center py-10">
                   Carregando...
                 </TableCell>
               </TableRow>
             ) : cartoes.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-10">
+                <TableCell colSpan={6} className="text-center py-10">
                   Nenhum cartão encontrado
                 </TableCell>
               </TableRow>
@@ -146,6 +154,17 @@ const Cartoes = () => {
                     </div>
                   </TableCell>
                   <TableCell>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="flex items-center gap-2"
+                      onClick={() => openFaturaModal(cartao)}
+                    >
+                      <FileText className="h-4 w-4" />
+                      Visualizar
+                    </Button>
+                  </TableCell>
+                  <TableCell>
                     <div className="flex space-x-2">
                       <Button variant="ghost" size="icon" onClick={() => openEditForm(cartao)}>
                         <Edit className="h-4 w-4" />
@@ -165,14 +184,12 @@ const Cartoes = () => {
       </div>
 
       {/* Modal de criação/edição de cartão */}
-      {isFormOpen && (
-        <CartaoForm
-          cartao={currentCartao}
-          isOpen={isFormOpen}
-          onClose={handleCloseForm}
-          onSubmit={handleFormSubmit}
-        />
-      )}
+      <CartaoForm
+        cartao={currentCartao}
+        isOpen={isFormOpen}
+        onClose={handleCloseForm}
+        onSubmit={handleFormSubmit}
+      />
 
       {/* Diálogo de confirmação de exclusão */}
       {isDeleteDialogOpen && currentCartao && (
@@ -183,6 +200,15 @@ const Cartoes = () => {
           title="Excluir Cartão"
           description={`Tem certeza que deseja excluir o cartão "${currentCartao.nome}"?`}
           isLoading={deleteMutation.isPending}
+        />
+      )}
+
+      {/* Modal de fatura */}
+      {isFaturaModalOpen && currentCartao && (
+        <FaturaModal
+          cartao={currentCartao}
+          isOpen={isFaturaModalOpen}
+          onClose={() => setIsFaturaModalOpen(false)}
         />
       )}
     </div>
