@@ -72,23 +72,74 @@ export function FaturaModal({ cartao, isOpen, onClose }: FaturaModalProps) {
 
     try {
       setIsExporting(true);
+
+      // Configurações do PDF A4
+      const a4Width = 210; // largura A4 em mm
+      const a4Height = 297; // altura A4 em mm
+
+      // Configurar html2canvas
       const canvas = await html2canvas(faturaRef.current, {
-        scale: 2,
+        scale: 2, // Aumenta a qualidade
         backgroundColor: '#ffffff',
+        useCORS: true,
         logging: false,
+        allowTaint: true,
+        scrollY: -window.scrollY,
+        height: faturaRef.current.offsetHeight,
+        windowHeight: faturaRef.current.offsetHeight
       });
       
-      const imgWidth = 210; // A4 width in mm
+      // Calcular dimensões mantendo proporção
+      const imgWidth = a4Width;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgData = canvas.toDataURL('image/png');
+      // Criar PDF
+      const pdf = new jsPDF({
+        orientation: imgHeight > a4Height ? 'p' : 'p',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      // Se a altura da imagem for maior que a altura do A4, criar múltiplas páginas
+      if (imgHeight > a4Height) {
+        let heightLeft = imgHeight;
+        let position = 0;
+        let page = 1;
+
+        while (heightLeft >= 0) {
+          pdf.addImage(
+            canvas.toDataURL('image/png'),
+            'PNG',
+            0,
+            position,
+            imgWidth,
+            imgHeight
+          );
+
+          heightLeft -= a4Height;
+          position -= a4Height;
+
+          if (heightLeft >= 0) {
+            pdf.addPage();
+          }
+        }
+      } else {
+        // Se couber em uma página, centralizar verticalmente
+        const yPos = (a4Height - imgHeight) / 2;
+        pdf.addImage(
+          canvas.toDataURL('image/png'),
+          'PNG',
+          0,
+          yPos,
+          imgWidth,
+          imgHeight
+        );
+      }
       
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
       pdf.save(`fatura_${cartao.nome.toLowerCase().replace(/\s+/g, '_')}_${mesNome?.toLowerCase()}_${anoSelecionado}.pdf`);
-      
       toast.success('Fatura exportada com sucesso!');
     } catch (error) {
+      console.error('Erro ao exportar:', error);
       toast.error('Erro ao exportar a fatura. Tente novamente.');
     } finally {
       setIsExporting(false);
@@ -97,8 +148,8 @@ export function FaturaModal({ cartao, isOpen, onClose }: FaturaModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl">
-        <DialogHeader className="flex flex-row items-center justify-between">
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+        <DialogHeader className="flex flex-row items-center justify-between shrink-0">
           <div>
             <DialogTitle>Fatura do Cartão {cartao.nome}</DialogTitle>
             <DialogDescription>
@@ -116,14 +167,14 @@ export function FaturaModal({ cartao, isOpen, onClose }: FaturaModalProps) {
           </Button>
         </DialogHeader>
 
-        <div className="flex gap-4 mb-6">
-          <div className="space-y-2">
+        <div className="flex flex-col sm:flex-row gap-4 mb-6 shrink-0">
+          <div className="space-y-2 flex-1">
             <Label>Mês</Label>
             <Select
               value={String(mesSelecionado)}
               onValueChange={(value) => setMesSelecionado(Number(value))}
             >
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Selecione o mês" />
               </SelectTrigger>
               <SelectContent>
@@ -136,13 +187,13 @@ export function FaturaModal({ cartao, isOpen, onClose }: FaturaModalProps) {
             </Select>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2 flex-1">
             <Label>Ano</Label>
             <Select
               value={String(anoSelecionado)}
               onValueChange={(value) => setAnoSelecionado(Number(value))}
             >
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Selecione o ano" />
               </SelectTrigger>
               <SelectContent>
@@ -156,93 +207,97 @@ export function FaturaModal({ cartao, isOpen, onClose }: FaturaModalProps) {
           </div>
         </div>
 
-        {/* Conteúdo que será exportado para PDF */}
-        <div ref={faturaRef} className="bg-white p-8">
-          {/* Cabeçalho da Fatura */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <CreditCard className="h-8 w-8 text-primary" />
-                <div>
-                  <h2 className="text-2xl font-bold">{cartao.nome}</h2>
-                  <p className="text-muted-foreground">
-                    Fatura de {mesNome} de {anoSelecionado}
-                  </p>
+        <div className="overflow-y-auto flex-1 min-h-0">
+          {/* Conteúdo que será exportado para PDF */}
+          <div ref={faturaRef} className="bg-white p-8">
+            {/* Cabeçalho da Fatura */}
+            <div className="mb-8">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+                <div className="flex items-center gap-3">
+                  <CreditCard className="h-8 w-8 text-primary" />
+                  <div>
+                    <h2 className="text-2xl font-bold whitespace-normal break-words">{cartao.nome}</h2>
+                    <p className="text-muted-foreground whitespace-normal">
+                      Fatura de {mesNome} de {anoSelecionado}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-left sm:text-right whitespace-normal">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-2">
+                    <Calendar className="h-4 w-4 flex-shrink-0" />
+                    <span>Vencimento: dia {cartao.diaVencimento}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Calendar className="h-4 w-4 flex-shrink-0" />
+                    <span>Fechamento: dia {cartao.diaFechamento}</span>
+                  </div>
                 </div>
               </div>
-              <div className="text-right">
-                <div className="flex items-center gap-2 text-muted-foreground mb-2">
-                  <Calendar className="h-4 w-4" />
-                  <span>Vencimento: dia {cartao.diaVencimento}</span>
-                </div>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Calendar className="h-4 w-4" />
-                  <span>Fechamento: dia {cartao.diaFechamento}</span>
-                </div>
+              <div className="h-1 bg-gradient-to-r from-primary to-primary/50 rounded-full" />
+            </div>
+
+            <div className="border rounded-lg overflow-hidden">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-gray-100">
+                      <TableHead className="font-bold whitespace-normal">Descrição</TableHead>
+                      <TableHead className="font-bold whitespace-normal">Data</TableHead>
+                      <TableHead className="font-bold whitespace-normal">Categoria</TableHead>
+                      <TableHead className="font-bold text-right whitespace-normal">Valor</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {isLoading ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-10">
+                          Carregando...
+                        </TableCell>
+                      </TableRow>
+                    ) : error ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-10 text-red-500">
+                          Erro ao carregar os dados. Tente novamente.
+                        </TableCell>
+                      </TableRow>
+                    ) : despesas.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-10">
+                          Nenhuma despesa encontrada para este período
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      <>
+                        {despesas.map((despesa) => (
+                          <TableRow key={despesa.id} className="hover:bg-gray-50">
+                            <TableCell className="font-medium">{despesa.descricao}</TableCell>
+                            <TableCell>{new Date(despesa.data).toLocaleDateString('pt-BR')}</TableCell>
+                            <TableCell>{despesa.categoria?.nome || "Sem categoria"}</TableCell>
+                            <TableCell className="text-right">{formatarMoeda(despesa.valor)}</TableCell>
+                          </TableRow>
+                        ))}
+                        <TableRow className="bg-gray-50 border-t-2">
+                          <TableCell colSpan={3} className="font-bold text-right text-lg">
+                            Total da Fatura
+                          </TableCell>
+                          <TableCell className="font-bold text-right text-lg">
+                            {formatarMoeda(totalFatura)}
+                          </TableCell>
+                        </TableRow>
+                      </>
+                    )}
+                  </TableBody>
+                </Table>
               </div>
             </div>
-            <div className="h-1 bg-gradient-to-r from-primary to-primary/50 rounded-full" />
-          </div>
 
-          <div className="border rounded-lg overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-gray-100">
-                  <TableHead className="font-bold">Descrição</TableHead>
-                  <TableHead className="font-bold">Data</TableHead>
-                  <TableHead className="font-bold">Categoria</TableHead>
-                  <TableHead className="font-bold text-right">Valor</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center py-10">
-                      Carregando...
-                    </TableCell>
-                  </TableRow>
-                ) : error ? (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center py-10 text-red-500">
-                      Erro ao carregar os dados. Tente novamente.
-                    </TableCell>
-                  </TableRow>
-                ) : despesas.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center py-10">
-                      Nenhuma despesa encontrada para este período
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  <>
-                    {despesas.map((despesa) => (
-                      <TableRow key={despesa.id} className="hover:bg-gray-50">
-                        <TableCell className="font-medium">{despesa.descricao}</TableCell>
-                        <TableCell>{new Date(despesa.data).toLocaleDateString('pt-BR')}</TableCell>
-                        <TableCell>{despesa.categoria?.nome || "Sem categoria"}</TableCell>
-                        <TableCell className="text-right">{formatarMoeda(despesa.valor)}</TableCell>
-                      </TableRow>
-                    ))}
-                    <TableRow className="bg-gray-50 border-t-2">
-                      <TableCell colSpan={3} className="font-bold text-right text-lg">
-                        Total da Fatura
-                      </TableCell>
-                      <TableCell className="font-bold text-right text-lg">
-                        {formatarMoeda(totalFatura)}
-                      </TableCell>
-                    </TableRow>
-                  </>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-
-          {/* Rodapé da Fatura */}
-          <div className="mt-8 text-sm text-muted-foreground">
-            <p className="text-center">
-              Fatura gerada em {new Date().toLocaleDateString('pt-BR')} às{' '}
-              {new Date().toLocaleTimeString('pt-BR')}
-            </p>
+            {/* Rodapé da Fatura */}
+            <div className="mt-8 text-sm text-muted-foreground">
+              <p className="text-center whitespace-normal">
+                Fatura gerada em {new Date().toLocaleDateString('pt-BR')} às{' '}
+                {new Date().toLocaleTimeString('pt-BR')}
+              </p>
+            </div>
           </div>
         </div>
       </DialogContent>
