@@ -88,12 +88,6 @@ const Despesas = () => {
   });
 
   // Manipuladores de eventos
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPaginaAtual(0); // Resetar para primeira página ao pesquisar
-    queryClient.invalidateQueries({ queryKey: ["despesas"] });
-  };
-
   const handlePageChange = (newPage: number) => {
     setPaginaAtual(newPage);
   };
@@ -335,14 +329,17 @@ const Despesas = () => {
       />
 
       <div className="mb-6 space-y-4">
-        <form onSubmit={handleSearch} className="flex items-center gap-4">
+        <div className="flex items-center gap-4">
           <div className="relative w-full max-w-sm">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
               placeholder="Buscar despesas..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setPaginaAtual(0);
+              }}
               className="pl-8"
             />
           </div>
@@ -386,9 +383,7 @@ const Despesas = () => {
               ))}
             </SelectContent>
           </Select>
-
-          <Button type="submit">Buscar</Button>
-        </form>
+        </div>
       </div>
 
       <div className="border rounded-lg">

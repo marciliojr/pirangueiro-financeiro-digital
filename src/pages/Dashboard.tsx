@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
-import { Home, TrendingUp, TrendingDown, Wallet, Calendar as CalendarIcon } from "lucide-react";
+import { Home, TrendingUp, TrendingDown, Wallet, Calendar as CalendarIcon, PieChart, LineChart } from "lucide-react";
 import { formatarMoeda } from "@/services/api";
 import { ReceitasService } from "@/services/receitas";
 import { DespesasService } from "@/services/despesas";
@@ -16,6 +16,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 
 const Dashboard = () => {
   const [date, setDate] = useState<Date>(new Date());
@@ -46,7 +48,7 @@ const Dashboard = () => {
     queryKey: ["grafico-variacao-mensal-despesas", ano],
     queryFn: async () => {
       const dados = await GraficosService.buscarVariacaoMensalDespesas(ano);
-      console.log('Dados recebidos da API:', dados); // Log para debug
+      console.log('Dados recebidos da API:', dados);
       return dados;
     },
   });
@@ -67,7 +69,6 @@ const Dashboard = () => {
     return <div className="container mx-auto py-6">Carregando dados...</div>;
   }
 
-  // Log para debug
   console.log('Estado atual dos dados de variação mensal:', dadosVariacaoMensal);
 
   return (
@@ -131,20 +132,51 @@ const Dashboard = () => {
         />
       </div>
 
-      <div className="grid gap-6">
-        {dadosGrafico && (
-          <GraficoReceitasDespesas 
-            receitas={dadosGrafico.receitas} 
-            despesas={dadosGrafico.despesas} 
-          />
-        )}
+      <Tabs defaultValue="categorias" className="w-full">
+        <div className="flex">
+          <TabsList className="flex flex-col h-fit space-y-2 mr-4">
+            <TabsTrigger 
+              value="categorias"
+              className={cn(
+                "w-full justify-start gap-2 px-4 py-2",
+                "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              )}
+            >
+              <PieChart className="h-4 w-4" />
+              Categorias
+            </TabsTrigger>
+            <TabsTrigger 
+              value="variacao"
+              className={cn(
+                "w-full justify-start gap-2 px-4 py-2",
+                "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              )}
+            >
+              <LineChart className="h-4 w-4" />
+              Variação Mensal
+            </TabsTrigger>
+          </TabsList>
 
-        {dadosVariacaoMensal && dadosVariacaoMensal.totaisMensais && dadosVariacaoMensal.totaisMensais.length > 0 && (
-          <GraficoVariacaoMensalDespesas 
-            dados={dadosVariacaoMensal}
-          />
-        )}
-      </div>
+          <div className="flex-1">
+            <TabsContent value="categorias" className="m-0">
+              {dadosGrafico && (
+                <GraficoReceitasDespesas 
+                  receitas={dadosGrafico.receitas} 
+                  despesas={dadosGrafico.despesas} 
+                />
+              )}
+            </TabsContent>
+
+            <TabsContent value="variacao" className="m-0">
+              {dadosVariacaoMensal && dadosVariacaoMensal.totaisMensais && dadosVariacaoMensal.totaisMensais.length > 0 && (
+                <GraficoVariacaoMensalDespesas 
+                  dados={dadosVariacaoMensal}
+                />
+              )}
+            </TabsContent>
+          </div>
+        </div>
+      </Tabs>
     </div>
   );
 };
