@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DadosGraficoDTO } from "@/services/graficos";
 import { formatarMoeda } from "@/services/api";
-import { PieChart, Pie, Cell, Sector, ResponsiveContainer } from "recharts";
+import { PieChart, Pie, Cell, Sector, ResponsiveContainer, Legend } from "recharts";
 import { useState } from "react";
 
 interface GraficoReceitasDespesasProps {
@@ -27,6 +27,18 @@ interface ActiveShapeProps {
     payload: DadosGrafico;
     percent: number;
     value: number;
+}
+
+interface LegendPayload {
+    value: string;
+    id?: string;
+    type?: string;
+    color?: string;
+    payload?: {
+        name: string;
+        value: number;
+        cor: string;
+    };
 }
 
 const renderActiveShape = (props: ActiveShapeProps) => {
@@ -100,18 +112,22 @@ export function GraficoReceitasDespesas({ receitas, despesas }: GraficoReceitasD
     // Verificar se há dados para exibir
     const temDados = receitas.length > 0 || despesas.length > 0;
 
-    // Preparar dados para os gráficos
-    const dadosReceitas = receitas.map(r => ({
-        name: r.categoria,
-        value: r.valor,
-        cor: r.cor
-    }));
+    // Preparar dados para os gráficos e ordenar por valor
+    const dadosReceitas = receitas
+        .map(r => ({
+            name: r.categoria,
+            value: r.valor,
+            fill: r.cor
+        }))
+        .sort((a, b) => b.value - a.value);
 
-    const dadosDespesas = despesas.map(d => ({
-        name: d.categoria,
-        value: d.valor,
-        cor: d.cor
-    }));
+    const dadosDespesas = despesas
+        .map(d => ({
+            name: d.categoria,
+            value: d.valor,
+            fill: d.cor
+        }))
+        .sort((a, b) => b.value - a.value);
 
     const onPieEnterReceitas = (_: unknown, index: number) => {
         setActiveIndexReceitas(index);
@@ -132,55 +148,79 @@ export function GraficoReceitasDespesas({ receitas, despesas }: GraficoReceitasD
                         Nenhum dado disponível para o período selecionado
                     </div>
                 ) : (
-                    <div className="h-[400px] w-full grid grid-cols-2 gap-4">
+                    <div className="h-[500px] w-full grid grid-cols-2 gap-4">
                         {/* Gráfico de Receitas */}
-                        <div className="h-full">
+                        <div className="h-full flex flex-col">
                             <p className="text-center font-medium text-green-600 mb-4">Receitas</p>
-                            <ResponsiveContainer width="100%" height="90%">
-                                <PieChart>
-                                    <Pie
-                                        activeIndex={activeIndexReceitas}
-                                        activeShape={renderActiveShape}
-                                        data={dadosReceitas}
-                                        dataKey="value"
-                                        nameKey="name"
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={60}
-                                        outerRadius={80}
-                                        onMouseEnter={onPieEnterReceitas}
-                                    >
-                                        {dadosReceitas.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.cor} />
-                                        ))}
-                                    </Pie>
-                                </PieChart>
-                            </ResponsiveContainer>
+                            <div className="flex-1">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            activeIndex={activeIndexReceitas}
+                                            activeShape={renderActiveShape}
+                                            data={dadosReceitas}
+                                            dataKey="value"
+                                            nameKey="name"
+                                            cx="50%"
+                                            cy="45%"
+                                            innerRadius={60}
+                                            outerRadius={80}
+                                            onMouseEnter={onPieEnterReceitas}
+                                        >
+                                            {dadosReceitas.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={entry.fill} />
+                                            ))}
+                                        </Pie>
+                                        <Legend
+                                            layout="horizontal"
+                                            align="center"
+                                            verticalAlign="bottom"
+                                            wrapperStyle={{
+                                                paddingTop: '20px',
+                                                width: '100%',
+                                                fontSize: '12px'
+                                            }}
+                                        />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </div>
                         </div>
 
                         {/* Gráfico de Despesas */}
-                        <div className="h-full">
+                        <div className="h-full flex flex-col">
                             <p className="text-center font-medium text-red-600 mb-4">Despesas</p>
-                            <ResponsiveContainer width="100%" height="90%">
-                                <PieChart>
-                                    <Pie
-                                        activeIndex={activeIndexDespesas}
-                                        activeShape={renderActiveShape}
-                                        data={dadosDespesas}
-                                        dataKey="value"
-                                        nameKey="name"
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={60}
-                                        outerRadius={80}
-                                        onMouseEnter={onPieEnterDespesas}
-                                    >
-                                        {dadosDespesas.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.cor} />
-                                        ))}
-                                    </Pie>
-                                </PieChart>
-                            </ResponsiveContainer>
+                            <div className="flex-1">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            activeIndex={activeIndexDespesas}
+                                            activeShape={renderActiveShape}
+                                            data={dadosDespesas}
+                                            dataKey="value"
+                                            nameKey="name"
+                                            cx="50%"
+                                            cy="45%"
+                                            innerRadius={60}
+                                            outerRadius={80}
+                                            onMouseEnter={onPieEnterDespesas}
+                                        >
+                                            {dadosDespesas.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={entry.fill} />
+                                            ))}
+                                        </Pie>
+                                        <Legend
+                                            layout="horizontal"
+                                            align="center"
+                                            verticalAlign="bottom"
+                                            wrapperStyle={{
+                                                paddingTop: '20px',
+                                                width: '100%',
+                                                fontSize: '12px'
+                                            }}
+                                        />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </div>
                         </div>
                     </div>
                 )}
