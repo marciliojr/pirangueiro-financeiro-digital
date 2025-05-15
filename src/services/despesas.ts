@@ -20,6 +20,14 @@ export interface DespesaDTO {
   cartaoId?: number;
 }
 
+export interface PageDTO<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
+}
+
 export const DespesasService = {
   listar: async (): Promise<DespesaDTO[]> => {
     const response = await api.get("/despesas");
@@ -36,8 +44,11 @@ export const DespesasService = {
     return response.data;
   },
 
-  buscarPorDescricao: async (descricao: string): Promise<DespesaDTO[]> => {
-    const response = await api.get(`/despesas/buscar?descricao=${descricao}`);
+  buscarPorDescricao: async (descricao: string, mes?: number, ano?: number, pagina: number = 0): Promise<PageDTO<DespesaDTO>> => {
+    let url = `/despesas/buscar?descricao=${descricao}&pagina=${pagina}`;
+    if (mes) url += `&mes=${mes}`;
+    if (ano) url += `&ano=${ano}`;
+    const response = await api.get(url);
     return response.data;
   },
 

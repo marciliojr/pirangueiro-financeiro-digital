@@ -7,10 +7,11 @@ import { ContasService } from "@/services/contas";
 import { CartoesService } from "@/services/cartoes";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
-import { Plus, Search, Edit, Trash, FileText, ArrowUpDown, ArrowUp, ArrowDown, FileDown } from "lucide-react";
+import { Plus, Search, Edit, Trash, FileText, ArrowUpDown, ArrowUp, ArrowDown, FileDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { formatarMoeda, formatarData } from "@/services/api";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { formatarMoeda, formatarData, formatarMesAno } from "@/services/api";
 import { DespesaForm } from "@/components/despesas/DespesaForm";
 import { ConfirmDialog } from "@/components/despesas/ConfirmDialog";
 import { cn } from "@/lib/utils";
@@ -20,8 +21,31 @@ import autoTable, { UserOptions } from "jspdf-autotable";
 type SortField = 'descricao' | 'data' | 'categoria' | 'conta' | 'cartao' | 'valor';
 type SortOrder = 'asc' | 'desc';
 
+// Gerar lista de meses
+const meses = [
+  { valor: 1, nome: "Janeiro" },
+  { valor: 2, nome: "Fevereiro" },
+  { valor: 3, nome: "Março" },
+  { valor: 4, nome: "Abril" },
+  { valor: 5, nome: "Maio" },
+  { valor: 6, nome: "Junho" },
+  { valor: 7, nome: "Julho" },
+  { valor: 8, nome: "Agosto" },
+  { valor: 9, nome: "Setembro" },
+  { valor: 10, nome: "Outubro" },
+  { valor: 11, nome: "Novembro" },
+  { valor: 12, nome: "Dezembro" }
+];
+
+// Gerar lista de anos (ano atual e 2 anos anteriores)
+const anoAtual = new Date().getFullYear();
+const anos = Array.from({ length: 3 }, (_, i) => anoAtual - i).sort((a, b) => b - a);
+
 const Despesas = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [mesSelecionado, setMesSelecionado] = useState<number | undefined>(undefined);
+  const [anoSelecionado, setAnoSelecionado] = useState<number | undefined>(undefined);
+  const [paginaAtual, setPaginaAtual] = useState(0);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [currentDespesa, setCurrentDespesa] = useState<DespesaDTO | null>(null);
@@ -30,11 +54,9 @@ const Despesas = () => {
   const queryClient = useQueryClient();
 
   // Obter lista de despesas
-  const { data: despesas = [], isLoading } = useQuery({
-    queryKey: ["despesas", searchTerm],
-    queryFn: () => searchTerm 
-      ? DespesasService.buscarPorDescricao(searchTerm)
-      : DespesasService.listar(),
+  const { data: despesasPage, isLoading } = useQuery({
+    queryKey: ["despesas", searchTerm, mesSelecionado, anoSelecionado, paginaAtual],
+    queryFn: () => DespesasService.buscarPorDescricao(searchTerm, mesSelecionado, anoSelecionado, paginaAtual),
   });
   
   // Obter categorias para exibir os nomes
@@ -68,7 +90,12 @@ const Despesas = () => {
   // Manipuladores de eventos
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    setPaginaAtual(0); // Resetar para primeira página ao pesquisar
     queryClient.invalidateQueries({ queryKey: ["despesas"] });
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setPaginaAtual(newPage);
   };
 
   const openCreateForm = () => {
@@ -201,6 +228,8 @@ const Despesas = () => {
   };
 
   const exportarPDF = () => {
+    if (!despesasPage?.content) return;
+
     const doc = new jsPDF();
     
     // Configurar fonte para suportar caracteres especiais
@@ -210,12 +239,20 @@ const Despesas = () => {
     doc.setFontSize(20);
     doc.text("Extrato de Despesas", 14, 20);
     
-    // Adicionar data de geração
+    // Adicionar data de geração e filtros aplicados
     doc.setFontSize(10);
     doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 14, 30);
     
+    if (mesSelecionado && anoSelecionado) {
+      doc.text(`Período: ${formatarMesAno(mesSelecionado, anoSelecionado)}`, 14, 35);
+    }
+    
+    if (searchTerm) {
+      doc.text(`Filtro: ${searchTerm}`, 14, mesSelecionado && anoSelecionado ? 40 : 35);
+    }
+    
     // Preparar dados para a tabela
-    const dadosTabela = sortDespesas(despesas).map(despesa => [
+    const dadosTabela = sortDespesas(despesasPage.content).map(despesa => [
       despesa.descricao,
       formatarData(despesa.data),
       getCategoryName(despesa),
@@ -228,7 +265,7 @@ const Despesas = () => {
     const tableOptions: UserOptions = {
       head: [['Descrição', 'Data', 'Categoria', 'Conta', 'Cartão', 'Valor']],
       body: dadosTabela,
-      startY: 40,
+      startY: searchTerm || (mesSelecionado && anoSelecionado) ? 45 : 40,
       theme: 'striped',
       headStyles: { fillColor: [66, 135, 245] },
       styles: { 
@@ -248,7 +285,7 @@ const Despesas = () => {
     autoTable(doc, tableOptions);
     
     // Adicionar total
-    const totalDespesas = despesas.reduce((acc, despesa) => acc + despesa.valor, 0);
+    const totalDespesas = despesasPage.content.reduce((acc, despesa) => acc + despesa.valor, 0);
     const finalY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY || 40;
     
     doc.setFont("helvetica", "bold");
@@ -280,8 +317,8 @@ const Despesas = () => {
         }
       />
 
-      <div className="mb-6">
-        <form onSubmit={handleSearch} className="flex items-center space-x-2">
+      <div className="mb-6 space-y-4">
+        <form onSubmit={handleSearch} className="flex items-center gap-4">
           <div className="relative w-full max-w-sm">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
@@ -292,6 +329,47 @@ const Despesas = () => {
               className="pl-8"
             />
           </div>
+
+          <Select
+            value={mesSelecionado?.toString()}
+            onValueChange={(value) => {
+              setPaginaAtual(0);
+              setMesSelecionado(value ? parseInt(value) : undefined);
+            }}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Selecione o mês" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="undefined">Todos os meses</SelectItem>
+              {meses.map((mes) => (
+                <SelectItem key={mes.valor} value={mes.valor.toString()}>
+                  {mes.nome}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={anoSelecionado?.toString()}
+            onValueChange={(value) => {
+              setPaginaAtual(0);
+              setAnoSelecionado(value === "undefined" ? undefined : parseInt(value));
+            }}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Selecione o ano" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="undefined">Todos os anos</SelectItem>
+              {anos.map((ano) => (
+                <SelectItem key={ano} value={ano.toString()}>
+                  {ano}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           <Button type="submit">Buscar</Button>
         </form>
       </div>
@@ -329,14 +407,14 @@ const Despesas = () => {
                   Carregando...
                 </TableCell>
               </TableRow>
-            ) : despesas.length === 0 ? (
+            ) : !despesasPage?.content || despesasPage.content.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} className="text-center py-10">
                   Nenhuma despesa encontrada
                 </TableCell>
               </TableRow>
             ) : (
-              sortDespesas(despesas).map((despesa) => (
+              sortDespesas(despesasPage.content).map((despesa) => (
                 <TableRow key={despesa.id}>
                   <TableCell className="font-medium">{despesa.descricao}</TableCell>
                   <TableCell>{formatarData(despesa.data)}</TableCell>
@@ -384,6 +462,37 @@ const Despesas = () => {
             )}
           </TableBody>
         </Table>
+
+        {despesasPage && despesasPage.totalPages > 1 && (
+          <div className="flex items-center justify-between px-4 py-4 border-t">
+            <div className="text-sm text-muted-foreground">
+              Mostrando {despesasPage.content.length} de {despesasPage.totalElements} resultados
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(paginaAtual - 1)}
+                disabled={paginaAtual === 0}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                <span className="sr-only">Página anterior</span>
+              </Button>
+              <div className="text-sm font-medium">
+                Página {paginaAtual + 1} de {despesasPage.totalPages}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(paginaAtual + 1)}
+                disabled={paginaAtual === despesasPage.totalPages - 1}
+              >
+                <ChevronRight className="h-4 w-4" />
+                <span className="sr-only">Próxima página</span>
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Modal de criação/edição de despesa */}
