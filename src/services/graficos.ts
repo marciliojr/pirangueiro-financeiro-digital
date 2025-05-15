@@ -1,4 +1,5 @@
 import { api } from "./api";
+import { CategoriasService } from "./categorias";
 
 export interface DadosGraficoDTO {
     categoria: string;
@@ -34,17 +35,27 @@ export const GraficosService = {
                     saldo: 0
                 };
             }
+
+            // Buscar todas as categorias para ter acesso às cores
+            const categoriasReceitas = await CategoriasService.listarReceitas();
+            const categoriasDespesas = await CategoriasService.listarDespesas();
+
+            // Criar um mapa de nome da categoria para cor
+            const mapaCores = new Map<string, string>();
+            [...categoriasReceitas, ...categoriasDespesas].forEach(cat => {
+                mapaCores.set(cat.nome, cat.cor || "#6366F1"); // Cor padrão se não definida
+            });
             
-            // Garantir que todas as receitas tenham uma cor (azul se não definida)
+            // Garantir que todas as receitas tenham uma cor da sua categoria
             const receitas = (response.data.receitas || []).map((receita: DadosGraficoDTO) => ({
                 ...receita,
-                cor: receita.cor || "#4287f5"
+                cor: mapaCores.get(receita.categoria) || "#4287f5" // Azul como fallback
             }));
 
-            // Garantir que todas as despesas tenham uma cor (vermelho se não definida)
+            // Garantir que todas as despesas tenham uma cor da sua categoria
             const despesas = (response.data.despesas || []).map((despesa: DadosGraficoDTO) => ({
                 ...despesa,
-                cor: despesa.cor || "#f54242"
+                cor: mapaCores.get(despesa.categoria) || "#f54242" // Vermelho como fallback
             }));
 
             return {
