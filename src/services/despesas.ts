@@ -52,6 +52,16 @@ export const DespesasService = {
     return response.data;
   },
 
+  buscarSemPaginar: async (descricao?: string, mes?: number, ano?: number): Promise<DespesaDTO[]> => {
+    const url = '/despesas/buscar/sempaginar?';
+    const params = new URLSearchParams();
+    if (descricao) params.append('descricao', descricao);
+    if (mes) params.append('mes', mes.toString());
+    if (ano) params.append('ano', ano.toString());
+    const response = await api.get(`${url}${params.toString()}`);
+    return response.data;
+  },
+
   criar: async (despesa: DespesaDTO): Promise<DespesaDTO> => {
     const response = await api.post("/despesas", despesa);
     return response.data;

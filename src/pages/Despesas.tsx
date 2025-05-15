@@ -227,75 +227,92 @@ const Despesas = () => {
     );
   };
 
-  const exportarPDF = () => {
-    if (!despesasPage?.content) return;
+  const exportarPDF = async () => {
+    try {
+      // Buscar todas as despesas sem paginação
+      const despesas = await DespesasService.buscarSemPaginar(
+        searchTerm || undefined,
+        mesSelecionado,
+        anoSelecionado
+      );
 
-    const doc = new jsPDF();
-    
-    // Configurar fonte para suportar caracteres especiais
-    doc.setFont("helvetica");
-    
-    // Adicionar título
-    doc.setFontSize(20);
-    doc.text("Extrato de Despesas", 14, 20);
-    
-    // Adicionar data de geração e filtros aplicados
-    doc.setFontSize(10);
-    doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 14, 30);
-    
-    if (mesSelecionado && anoSelecionado) {
-      doc.text(`Período: ${formatarMesAno(mesSelecionado, anoSelecionado)}`, 14, 35);
-    }
-    
-    if (searchTerm) {
-      doc.text(`Filtro: ${searchTerm}`, 14, mesSelecionado && anoSelecionado ? 40 : 35);
-    }
-    
-    // Preparar dados para a tabela
-    const dadosTabela = sortDespesas(despesasPage.content).map(despesa => [
-      despesa.descricao,
-      formatarData(despesa.data),
-      getCategoryName(despesa),
-      getAccountName(despesa),
-      getCardName(despesa),
-      formatarMoeda(despesa.valor)
-    ]);
-    
-    // Configurar e gerar a tabela
-    const tableOptions: UserOptions = {
-      head: [['Descrição', 'Data', 'Categoria', 'Conta', 'Cartão', 'Valor']],
-      body: dadosTabela,
-      startY: searchTerm || (mesSelecionado && anoSelecionado) ? 45 : 40,
-      theme: 'striped',
-      headStyles: { fillColor: [66, 135, 245] },
-      styles: { 
-        fontSize: 8,
-        cellPadding: 2
-      },
-      columnStyles: {
-        0: { cellWidth: 40 },
-        1: { cellWidth: 20 },
-        2: { cellWidth: 30 },
-        3: { cellWidth: 30 },
-        4: { cellWidth: 30 },
-        5: { cellWidth: 25, halign: 'right' }
+      const doc = new jsPDF();
+      
+      // Configurar fonte para suportar caracteres especiais
+      doc.setFont("helvetica");
+      
+      // Adicionar título
+      doc.setFontSize(20);
+      doc.text("Extrato de Despesas", 14, 20);
+      
+      // Adicionar data de geração e filtros aplicados
+      doc.setFontSize(10);
+      doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 14, 30);
+      
+      if (mesSelecionado && anoSelecionado) {
+        doc.text(`Período: ${formatarMesAno(mesSelecionado, anoSelecionado)}`, 14, 35);
       }
-    };
-    
-    autoTable(doc, tableOptions);
-    
-    // Adicionar total
-    const totalDespesas = despesasPage.content.reduce((acc, despesa) => acc + despesa.valor, 0);
-    const finalY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY || 40;
-    
-    doc.setFont("helvetica", "bold");
-    doc.text(`Total: ${formatarMoeda(totalDespesas)}`, 170, finalY + 10, { align: "right" });
-    
-    // Salvar o PDF
-    const dataHoje = new Date().toISOString().split('T')[0];
-    doc.save(`extrato_despesas_${dataHoje}.pdf`);
-    
-    toast.success("Extrato de despesas exportado com sucesso!");
+      
+      if (searchTerm) {
+        doc.text(`Filtro: ${searchTerm}`, 14, mesSelecionado && anoSelecionado ? 40 : 35);
+      }
+      
+      // Preparar dados para a tabela
+      const despesasOrdenadas = sortDespesas(despesas);
+      const dadosTabela = despesasOrdenadas.map((despesa, index) => [
+        (index + 1).toString(), // Número sequencial
+        despesa.descricao,
+        formatarData(despesa.data),
+        getCategoryName(despesa),
+        getAccountName(despesa),
+        getCardName(despesa),
+        formatarMoeda(despesa.valor)
+      ]);
+      
+      // Configurar e gerar a tabela
+      const tableOptions: UserOptions = {
+        head: [['Nº', 'Descrição', 'Data', 'Categoria', 'Conta', 'Cartão', 'Valor']],
+        body: dadosTabela,
+        startY: searchTerm || (mesSelecionado && anoSelecionado) ? 45 : 40,
+        theme: 'striped',
+        headStyles: { fillColor: [66, 135, 245] },
+        styles: { 
+          fontSize: 8,
+          cellPadding: 2
+        },
+        columnStyles: {
+          0: { cellWidth: 10, halign: 'center' }, // Número
+          1: { cellWidth: 35 }, // Descrição
+          2: { cellWidth: 20 }, // Data
+          3: { cellWidth: 25 }, // Categoria
+          4: { cellWidth: 25 }, // Conta
+          5: { cellWidth: 25 }, // Cartão
+          6: { cellWidth: 25, halign: 'right' } // Valor
+        }
+      };
+      
+      autoTable(doc, tableOptions);
+      
+      // Calcular o total (convertendo para number para garantir)
+      const totalDespesas = despesasOrdenadas.reduce((acc, despesa) => {
+        const valor = typeof despesa.valor === 'string' ? parseFloat(despesa.valor) : despesa.valor;
+        return acc + (isNaN(valor) ? 0 : valor);
+      }, 0);
+
+      const finalY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY || 40;
+      
+      doc.setFont("helvetica", "bold");
+      doc.text(`Total: ${formatarMoeda(totalDespesas)}`, 170, finalY + 10, { align: "right" });
+      
+      // Salvar o PDF
+      const dataHoje = new Date().toISOString().split('T')[0];
+      doc.save(`extrato_despesas_${dataHoje}.pdf`);
+      
+      toast.success("Extrato de despesas exportado com sucesso!");
+    } catch (error) {
+      console.error("Erro ao exportar PDF:", error);
+      toast.error("Erro ao gerar o extrato de despesas");
+    }
   };
 
   return (
