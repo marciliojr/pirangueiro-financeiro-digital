@@ -10,6 +10,7 @@ import { LimitesService } from "@/services/limites";
 import { GraficosService } from "@/services/graficos";
 import { FinanceSummaryCard } from "@/components/dashboard/FinanceSummaryCard";
 import { GraficoReceitasDespesas } from "@/components/dashboard/GraficoReceitasDespesas";
+import { GraficoVariacaoMensalDespesas } from "@/components/dashboard/GraficoVariacaoMensalDespesas";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -41,6 +42,15 @@ const Dashboard = () => {
     queryFn: () => GraficosService.buscarReceitasDespesas(mes, ano),
   });
 
+  const { data: dadosVariacaoMensal, isLoading: isLoadingVariacaoMensal } = useQuery({
+    queryKey: ["grafico-variacao-mensal-despesas", ano],
+    queryFn: async () => {
+      const dados = await GraficosService.buscarVariacaoMensalDespesas(ano);
+      console.log('Dados recebidos da API:', dados); // Log para debug
+      return dados;
+    },
+  });
+
   // Garantir que receitas, despesas e limites sejam arrays
   const receitasArray = Array.isArray(receitas) ? receitas : [];
   const despesasArray = Array.isArray(despesas) ? despesas : [];
@@ -53,9 +63,12 @@ const Dashboard = () => {
   const totalLimites = limitesArray.reduce((acc, limite) => acc + limite.valor, 0);
 
   // Se os dados estiverem carregando, você pode mostrar um indicador de carregamento
-  if (isLoadingReceitas || isLoadingDespesas || isLoadingLimites || isLoadingGrafico) {
+  if (isLoadingReceitas || isLoadingDespesas || isLoadingLimites || isLoadingGrafico || isLoadingVariacaoMensal) {
     return <div className="container mx-auto py-6">Carregando dados...</div>;
   }
+
+  // Log para debug
+  console.log('Estado atual dos dados de variação mensal:', dadosVariacaoMensal);
 
   return (
     <div className="container mx-auto py-6">
@@ -89,8 +102,6 @@ const Dashboard = () => {
           title="Receitas" 
           value={totalReceitas} 
           icon={<TrendingUp className="h-5 w-5" />} 
-          trend={receitasArray.length > 0 ? '+10%' : '0%'}
-          trendUp={true}
           color="bg-emerald-50 dark:bg-emerald-950"
           iconColor="text-emerald-500"
         />
@@ -99,8 +110,6 @@ const Dashboard = () => {
           title="Despesas" 
           value={totalDespesas} 
           icon={<TrendingDown className="h-5 w-5" />} 
-          trend={despesasArray.length > 0 ? '+5%' : '0%'}
-          trendUp={false}
           color="bg-rose-50 dark:bg-rose-950"
           iconColor="text-rose-500"
         />
@@ -109,8 +118,6 @@ const Dashboard = () => {
           title="Saldo" 
           value={saldo} 
           icon={<Wallet className="h-5 w-5" />} 
-          trend={saldo > 0 ? '+15%' : '-5%'}
-          trendUp={saldo > 0}
           color="bg-blue-50 dark:bg-blue-950"
           iconColor="text-blue-500"
         />
@@ -119,19 +126,25 @@ const Dashboard = () => {
           title="Limites" 
           value={totalLimites} 
           icon={<Home className="h-5 w-5" />} 
-          trend="0%"
-          trendUp={true}
           color="bg-purple-50 dark:bg-purple-950"
           iconColor="text-purple-500"
         />
       </div>
 
-      {dadosGrafico && (
-        <GraficoReceitasDespesas 
-          receitas={dadosGrafico.receitas} 
-          despesas={dadosGrafico.despesas} 
-        />
-      )}
+      <div className="grid gap-6">
+        {dadosGrafico && (
+          <GraficoReceitasDespesas 
+            receitas={dadosGrafico.receitas} 
+            despesas={dadosGrafico.despesas} 
+          />
+        )}
+
+        {dadosVariacaoMensal && dadosVariacaoMensal.totaisMensais && dadosVariacaoMensal.totaisMensais.length > 0 && (
+          <GraficoVariacaoMensalDespesas 
+            dados={dadosVariacaoMensal}
+          />
+        )}
+      </div>
     </div>
   );
 };

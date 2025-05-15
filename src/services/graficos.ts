@@ -18,6 +18,16 @@ export interface GraficoReceitasDespesasDTO {
     saldo: number;
 }
 
+export interface TotalMensalDTO {
+    mes: string;
+    total: number;
+}
+
+export interface GraficoVariacaoMensalDTO {
+    ano: number;
+    totaisMensais: TotalMensalDTO[];
+}
+
 export const GraficosService = {
     buscarReceitasDespesas: async (mes: number, ano: number): Promise<GraficoReceitasDespesasDTO> => {
         try {
@@ -77,6 +87,19 @@ export const GraficosService = {
                 totalReceitas: 0,
                 totalDespesas: 0,
                 saldo: 0
+            };
+        }
+    },
+
+    buscarVariacaoMensalDespesas: async (ano: number): Promise<GraficoVariacaoMensalDTO> => {
+        try {
+            const response = await api.get(`/graficos/variacao-mensal-despesas?ano=${ano}`);
+            return response.data;
+        } catch (error) {
+            console.error("Erro ao buscar variação mensal de despesas:", error);
+            return {
+                ano,
+                totaisMensais: []
             };
         }
     }
