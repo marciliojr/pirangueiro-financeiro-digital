@@ -121,7 +121,7 @@ const Despesas = () => {
       return conta ? conta.nome : "Conta não encontrada";
     }
     
-    return "Conta não especificada";
+    return "-";
   };
 
   // Função para obter o nome do cartão pelo ID ou objeto

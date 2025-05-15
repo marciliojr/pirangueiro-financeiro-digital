@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { UppercaseInput } from "@/components/ui/uppercase-input";
 import { Loader2 } from "lucide-react";
 
 interface LimiteFormProps {
@@ -132,7 +133,7 @@ export function LimiteForm({ limite, isOpen, onClose, onSubmit }: LimiteFormProp
               
               <div className="space-y-2">
                 <Label htmlFor="descricao">Descrição</Label>
-                <Input
+                <UppercaseInput
                   id="descricao"
                   name="descricao"
                   value={formData.descricao}

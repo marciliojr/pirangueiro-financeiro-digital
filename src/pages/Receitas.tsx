@@ -6,20 +6,24 @@ import { CategoriasService } from "@/services/categorias";
 import { ContasService } from "@/services/contas";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
-import { Plus, Search, Edit, Trash, PiggyBank, FileText, FileDown } from "lucide-react";
+import { Plus, Search, Edit, Trash, PiggyBank, FileText, FileDown, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { formatarMoeda, formatarData } from "@/services/api";
 import { ReceitaForm } from "@/components/receitas/ReceitaForm";
 import { ConfirmDialog } from "@/components/receitas/ConfirmDialog";
+import { cn } from "@/lib/utils";
 import jsPDF from "jspdf";
 import autoTable, { UserOptions } from "jspdf-autotable";
+
+type SortField = 'descricao' | 'data' | 'categoria' | 'conta' | 'valor';
 
 const Receitas = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [currentReceita, setCurrentReceita] = useState<ReceitaDTO | null>(null);
+  const [sortConfig, setSortConfig] = useState<{ field: SortField; direction: 'asc' | 'desc' } | null>(null);
   const queryClient = useQueryClient();
 
   // Obter lista de receitas
@@ -108,7 +112,7 @@ const Receitas = () => {
       return conta ? conta.nome : "Conta não encontrada";
     }
     
-    return "Conta não especificada";
+    return "-";
   };
 
   const exportarPDF = () => {
@@ -170,6 +174,81 @@ const Receitas = () => {
     toast.success("Extrato de receitas exportado com sucesso!");
   };
 
+  // Função para ordenar as receitas
+  const sortReceitas = (receitas: ReceitaDTO[]) => {
+    if (!sortConfig) return receitas;
+
+    return [...receitas].sort((a, b) => {
+      if (sortConfig.field === 'descricao') {
+        return sortConfig.direction === 'asc'
+          ? a.descricao.localeCompare(b.descricao)
+          : b.descricao.localeCompare(a.descricao);
+      }
+      if (sortConfig.field === 'data') {
+        return sortConfig.direction === 'asc'
+          ? new Date(a.data).getTime() - new Date(b.data).getTime()
+          : new Date(b.data).getTime() - new Date(a.data).getTime();
+      }
+      if (sortConfig.field === 'categoria') {
+        const catA = getCategoryName(a);
+        const catB = getCategoryName(b);
+        return sortConfig.direction === 'asc'
+          ? catA.localeCompare(catB)
+          : catB.localeCompare(catA);
+      }
+      if (sortConfig.field === 'conta') {
+        const contaA = getAccountName(a);
+        const contaB = getAccountName(b);
+        return sortConfig.direction === 'asc'
+          ? contaA.localeCompare(contaB)
+          : contaB.localeCompare(contaA);
+      }
+      if (sortConfig.field === 'valor') {
+        return sortConfig.direction === 'asc'
+          ? a.valor - b.valor
+          : b.valor - a.valor;
+      }
+      return 0;
+    });
+  };
+
+  // Componente para o botão de ordenação
+  const SortButton = ({ field, label, className }: { field: SortField; label: string; className?: string }) => {
+    const isActive = sortConfig?.field === field;
+    const direction = sortConfig?.direction;
+
+    const handleSort = () => {
+      if (!isActive) {
+        setSortConfig({ field, direction: 'asc' });
+      } else {
+        setSortConfig({
+          field,
+          direction: direction === 'asc' ? 'desc' : 'asc'
+        });
+      }
+    };
+
+    return (
+      <Button
+        variant="ghost"
+        size="sm"
+        className={cn("h-8 flex items-center gap-1 -ml-3", className)}
+        onClick={handleSort}
+      >
+        {label}
+        {isActive ? (
+          direction === 'asc' ? (
+            <ArrowUp className="h-4 w-4" />
+          ) : (
+            <ArrowDown className="h-4 w-4" />
+          )
+        ) : (
+          <ArrowUpDown className="h-4 w-4" />
+        )}
+      </Button>
+    );
+  };
+
   return (
     <div className="container mx-auto py-6">
       <PageHeader
@@ -209,11 +288,21 @@ const Receitas = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Descrição</TableHead>
-              <TableHead>Data</TableHead>
-              <TableHead>Categoria</TableHead>
-              <TableHead>Conta</TableHead>
-              <TableHead className="text-right">Valor</TableHead>
+              <TableHead>
+                <SortButton field="descricao" label="Descrição" />
+              </TableHead>
+              <TableHead>
+                <SortButton field="data" label="Data" />
+              </TableHead>
+              <TableHead>
+                <SortButton field="categoria" label="Categoria" />
+              </TableHead>
+              <TableHead>
+                <SortButton field="conta" label="Conta" />
+              </TableHead>
+              <TableHead className="text-right">
+                <SortButton field="valor" label="Valor" className="justify-end" />
+              </TableHead>
               <TableHead>Anexo</TableHead>
               <TableHead className="w-[100px]">Ações</TableHead>
             </TableRow>
@@ -232,7 +321,7 @@ const Receitas = () => {
                 </TableCell>
               </TableRow>
             ) : (
-              receitas.map((receita) => (
+              sortReceitas(receitas).map((receita) => (
                 <TableRow key={receita.id}>
                   <TableCell className="font-medium">{receita.descricao}</TableCell>
                   <TableCell>{formatarData(receita.data)}</TableCell>

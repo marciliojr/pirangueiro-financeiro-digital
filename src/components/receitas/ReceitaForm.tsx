@@ -9,8 +9,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { UppercaseInput } from "@/components/ui/uppercase-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { UppercaseTextarea } from "@/components/ui/uppercase-textarea";
 import { Upload, Loader2, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -41,8 +43,8 @@ export function ReceitaForm({ receita, isOpen, onClose, onSubmit }: ReceitaFormP
 
   // Buscar categorias e contas para os selects
   const { data: categorias = [] } = useQuery<CategoriaDTO[]>({
-    queryKey: ["categorias"],
-    queryFn: () => CategoriasService.listar(),
+    queryKey: ["categorias-receitas"],
+    queryFn: () => CategoriasService.listarReceitas(),
   });
 
   const { data: contas = [] } = useQuery<ContaDTO[]>({
@@ -181,7 +183,7 @@ export function ReceitaForm({ receita, isOpen, onClose, onSubmit }: ReceitaFormP
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="descricao">Descrição</Label>
-            <Input
+            <UppercaseInput
               id="descricao"
               name="descricao"
               value={formData.descricao}
@@ -294,7 +296,7 @@ export function ReceitaForm({ receita, isOpen, onClose, onSubmit }: ReceitaFormP
 
           <div className="space-y-2">
             <Label htmlFor="observacao">Observação</Label>
-            <Textarea
+            <UppercaseTextarea
               id="observacao"
               name="observacao"
               value={formData.observacao}

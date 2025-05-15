@@ -10,8 +10,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { UppercaseInput } from "@/components/ui/uppercase-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { UppercaseTextarea } from "@/components/ui/uppercase-textarea";
 import { Upload, Loader2, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -61,8 +63,8 @@ export function DespesaForm({ despesa, isOpen, onClose, onSubmit }: DespesaFormP
 
   // Buscar categorias e contas para os selects
   const { data: categorias = [] } = useQuery<CategoriaDTO[]>({
-    queryKey: ["categorias"],
-    queryFn: () => CategoriasService.listar(),
+    queryKey: ["categorias-despesas"],
+    queryFn: () => CategoriasService.listarDespesas(),
   });
 
   const { data: contas = [] } = useQuery<ContaDTO[]>({
@@ -216,7 +218,7 @@ export function DespesaForm({ despesa, isOpen, onClose, onSubmit }: DespesaFormP
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="descricao">Descrição</Label>
-            <Input
+            <UppercaseInput
               id="descricao"
               name="descricao"
               value={formData.descricao}
@@ -265,7 +267,7 @@ export function DespesaForm({ despesa, isOpen, onClose, onSubmit }: DespesaFormP
               </SelectTrigger>
               <SelectContent>
                 {categorias.map((categoria) => (
-                  <SelectItem key={categoria.id} value={String(categoria.id)}>
+                  <SelectItem key={categoria.id} value={String(categoria.id!)}>
                     {categoria.nome}
                   </SelectItem>
                 ))}
@@ -347,7 +349,7 @@ export function DespesaForm({ despesa, isOpen, onClose, onSubmit }: DespesaFormP
 
           <div className="space-y-2">
             <Label htmlFor="observacao">Observação</Label>
-            <Textarea
+            <UppercaseTextarea
               id="observacao"
               name="observacao"
               value={formData.observacao}

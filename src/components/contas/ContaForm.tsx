@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { UppercaseInput } from "@/components/ui/uppercase-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Upload, Loader2, X as XIcon } from "lucide-react";
 
@@ -225,7 +226,7 @@ export function ContaForm({ conta, isOpen, onClose, onSubmit }: ContaFormProps) 
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="nome">Nome</Label>
-            <Input
+            <UppercaseInput
               id="nome"
               name="nome"
               value={formData.nome}

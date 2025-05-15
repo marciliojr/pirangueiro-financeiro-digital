@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { UppercaseInput } from "@/components/ui/uppercase-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import { formatarValorMonetario } from "@/services/api";
@@ -122,7 +123,7 @@ export function CartaoForm({ cartao, isOpen, onClose, onSubmit }: CartaoFormProp
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="nome">Nome</Label>
-            <Input
+            <UppercaseInput
               id="nome"
               name="nome"
               value={formData.nome}

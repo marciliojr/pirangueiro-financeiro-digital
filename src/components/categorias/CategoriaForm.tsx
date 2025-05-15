@@ -3,11 +3,13 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { CategoriasService, CategoriaDTO } from "@/services/categorias";
 import { uploadArquivo } from "@/services/api";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { UppercaseInput } from "@/components/ui/uppercase-input";
 import { Upload, Loader2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface CategoriaFormProps {
   categoria: CategoriaDTO | null;
@@ -21,11 +23,12 @@ export function CategoriaForm({ categoria, isOpen, onClose, onSubmit }: Categori
     id: categoria?.id || undefined,
     nome: categoria?.nome || "",
     cor: categoria?.cor || "#6366F1",
-    imagemUrl: categoria?.imagemUrl || ""
+    imagemCategoria: categoria?.imagemCategoria || "",
+    tipoReceita: categoria?.tipoReceita ?? true
   });
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string>(categoria?.imagemUrl || "");
+  const [previewUrl, setPreviewUrl] = useState<string>(categoria?.imagemCategoria || "");
   
   const queryClient = useQueryClient();
 
@@ -58,6 +61,13 @@ export function CategoriaForm({ categoria, isOpen, onClose, onSubmit }: Categori
     });
   };
 
+  const handleSelectChange = (value: string) => {
+    setFormData({
+      ...formData,
+      tipoReceita: value === "receita"
+    });
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     
@@ -73,6 +83,11 @@ export function CategoriaForm({ categoria, isOpen, onClose, onSubmit }: Categori
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (formData.tipoReceita === undefined) {
+      toast.error("Por favor, selecione o tipo da categoria");
+      return;
+    }
+
     try {
       const updatedFormData = { ...formData };
       
@@ -80,7 +95,7 @@ export function CategoriaForm({ categoria, isOpen, onClose, onSubmit }: Categori
       if (file) {
         setIsUploading(true);
         const imageUrl = await uploadArquivo(file);
-        updatedFormData.imagemUrl = imageUrl;
+        updatedFormData.imagemCategoria = imageUrl;
         setIsUploading(false);
       }
       
@@ -102,18 +117,38 @@ export function CategoriaForm({ categoria, isOpen, onClose, onSubmit }: Categori
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>{categoria ? "Editar Categoria" : "Nova Categoria"}</DialogTitle>
+          <DialogDescription>
+            {categoria ? "Edite os dados da categoria selecionada." : "Preencha os dados para criar uma nova categoria."}
+          </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="nome">Nome</Label>
-            <Input
+            <UppercaseInput
               id="nome"
               name="nome"
               value={formData.nome}
               onChange={handleChange}
               required
             />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="tipo">Tipo</Label>
+            <Select
+              value={formData.tipoReceita !== undefined ? (formData.tipoReceita ? "receita" : "despesa") : undefined}
+              onValueChange={handleSelectChange}
+              required
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="receita">Receita</SelectItem>
+                <SelectItem value="despesa">Despesa</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           
           <div className="space-y-2">

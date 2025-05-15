@@ -213,36 +213,18 @@ const Contas = () => {
                     </TableCell>
                     <TableCell className="font-medium">{conta.nome}</TableCell>
                     <TableCell>{conta.tipo}</TableCell>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <TableCell className="text-right font-medium text-green-600">
-                            <div className="flex items-center justify-end gap-1">
-                              <TrendingUp className="h-4 w-4" />
-                              {formatarMoeda(saldoConta.totalReceitas)}
-                            </div>
-                          </TableCell>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Total de Receitas</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <TableCell className="text-right font-medium text-red-600">
-                            <div className="flex items-center justify-end gap-1">
-                              <TrendingDown className="h-4 w-4" />
-                              {formatarMoeda(saldoConta.totalDespesas)}
-                            </div>
-                          </TableCell>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Total de Despesas</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                    <TableCell className="text-right font-medium text-green-600">
+                      <div className="flex items-center justify-end gap-1">
+                        <TrendingUp className="h-4 w-4" />
+                        {formatarMoeda(saldoConta.totalReceitas)}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right font-medium text-red-600">
+                      <div className="flex items-center justify-end gap-1">
+                        <TrendingDown className="h-4 w-4" />
+                        {formatarMoeda(saldoConta.totalDespesas)}
+                      </div>
+                    </TableCell>
                     <TableCell className={`text-right font-medium ${saldoConta.saldo >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       {formatarMoeda(saldoConta.saldo)}
                     </TableCell>

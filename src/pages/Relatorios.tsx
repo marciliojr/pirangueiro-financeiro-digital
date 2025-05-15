@@ -82,7 +82,7 @@ const Relatorios = () => {
   };
   
   const getAccountName = (contaId?: number) => {
-    if (!contaId) return "Conta não especificada";
+    if (!contaId) return "-";
     const conta = contas.find(acc => acc.id === contaId);
     return conta ? conta.nome : "Conta não encontrada";
   };

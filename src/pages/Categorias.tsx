@@ -102,6 +102,7 @@ const Categorias = () => {
             <TableRow>
               <TableHead>Ícone</TableHead>
               <TableHead>Nome</TableHead>
+              <TableHead>Tipo</TableHead>
               <TableHead>Cor</TableHead>
               <TableHead className="w-[100px]">Ações</TableHead>
             </TableRow>
@@ -109,13 +110,13 @@ const Categorias = () => {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-10">
+                <TableCell colSpan={5} className="text-center py-10">
                   Carregando...
                 </TableCell>
               </TableRow>
             ) : categorias.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-10">
+                <TableCell colSpan={5} className="text-center py-10">
                   Nenhuma categoria encontrada
                 </TableCell>
               </TableRow>
@@ -123,21 +124,34 @@ const Categorias = () => {
               categorias.map((categoria) => (
                 <TableRow key={categoria.id}>
                   <TableCell>
-                    <Avatar style={{ backgroundColor: categoria.cor }}>
-                      {categoria.imagemUrl ? (
-                        <AvatarImage src={categoria.imagemUrl} alt={categoria.nome} />
+                    <div 
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-white"
+                      style={{ backgroundColor: categoria.cor }}
+                    >
+                      {categoria.imagemCategoria ? (
+                        <img 
+                          src={categoria.imagemCategoria} 
+                          alt={categoria.nome}
+                          className="w-6 h-6"
+                        />
                       ) : (
-                        <AvatarFallback>{categoria.nome.substring(0, 2).toUpperCase()}</AvatarFallback>
+                        categoria.nome.substring(0, 1).toUpperCase()
                       )}
-                    </Avatar>
+                    </div>
                   </TableCell>
                   <TableCell className="font-medium">{categoria.nome}</TableCell>
                   <TableCell>
-                    <div className="flex items-center">
+                    <span className={`font-medium ${categoria.tipoReceita ? 'text-green-600' : 'text-red-600'}`}>
+                      {categoria.tipoReceita ? "Receita" : "Despesa"}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
                       <div 
-                        className="w-5 h-5 rounded-full" 
+                        className="w-6 h-6 rounded border"
                         style={{ backgroundColor: categoria.cor }}
-                      ></div>
+                      />
+                      {categoria.cor}
                     </div>
                   </TableCell>
                   <TableCell>
