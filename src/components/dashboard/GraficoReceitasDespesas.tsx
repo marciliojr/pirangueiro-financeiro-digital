@@ -51,15 +51,15 @@ const renderActiveShape = (props: ActiveShapeProps) => {
     const cos = Math.cos(-RADIAN * midAngle);
     const sx = cx + (outerRadius + 10) * cos;
     const sy = cy + (outerRadius + 10) * sin;
-    const mx = cx + (outerRadius + 30) * cos;
-    const my = cy + (outerRadius + 30) * sin;
-    const ex = mx + (cos >= 0 ? 1 : -1) * 22;
+    const mx = cx + (outerRadius + 25) * cos;
+    const my = cy + (outerRadius + 25) * sin;
+    const ex = mx + (cos >= 0 ? 1 : -1) * 18;
     const ey = my;
     const textAnchor = cos >= 0 ? 'start' : 'end';
 
     return (
         <g>
-            <text x={cx} y={cy} dy={8} textAnchor="middle" fill={fill}>
+            <text x={cx} y={cy} dy={8} textAnchor="middle" fill={fill} fontSize="11">
                 {payload.name}
             </text>
             <Sector
@@ -91,13 +91,15 @@ const renderActiveShape = (props: ActiveShapeProps) => {
                 y={ey}
                 textAnchor={textAnchor}
                 fill="#333"
+                fontSize="11"
             >{`${payload.name}`}</text>
             <text
                 x={ex + (cos >= 0 ? 1 : -1) * 12}
                 y={ey}
-                dy={18}
+                dy={16}
                 textAnchor={textAnchor}
                 fill="#999"
+                fontSize="11"
             >
                 {`${formatarMoeda(value)} (${(percent * 100).toFixed(2)}%)`}
             </text>
@@ -173,12 +175,12 @@ export function GraficoReceitasDespesas({ receitas, despesas }: GraficoReceitasD
                                         </Pie>
                                         <Legend
                                             layout="horizontal"
-                                            align="center"
+                                            align="left"
                                             verticalAlign="bottom"
                                             wrapperStyle={{
                                                 paddingTop: '20px',
                                                 width: '100%',
-                                                fontSize: '12px'
+                                                fontSize: '11px'
                                             }}
                                         />
                                     </PieChart>
@@ -210,12 +212,12 @@ export function GraficoReceitasDespesas({ receitas, despesas }: GraficoReceitasD
                                         </Pie>
                                         <Legend
                                             layout="horizontal"
-                                            align="center"
+                                            align="left"
                                             verticalAlign="bottom"
                                             wrapperStyle={{
                                                 paddingTop: '20px',
                                                 width: '100%',
-                                                fontSize: '12px'
+                                                fontSize: '11px'
                                             }}
                                         />
                                     </PieChart>

@@ -45,15 +45,16 @@ export function GraficoVariacaoMensalDespesas({ dados }: GraficoVariacaoMensalDe
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis 
                                 dataKey="mes"
-                                tick={{ fontSize: 12 }}
+                                tick={{ fontSize: 11 }}
                             />
                             <YAxis
-                                tick={{ fontSize: 12 }}
+                                tick={{ fontSize: 11 }}
                                 tickFormatter={(value) => formatarMoeda(value)}
                             />
                             <Tooltip
                                 formatter={(value: number) => [formatarMoeda(value), "Total"]}
                                 labelFormatter={(label) => `Mês: ${label}`}
+                                contentStyle={{ fontSize: '11px' }}
                             />
                             <Area
                                 type="monotone"
