@@ -51,4 +51,9 @@ export const ReceitasService = {
   excluir: async (id: number): Promise<void> => {
     await api.delete(`/receitas/${id}`);
   },
+
+  buscarTotal: async (): Promise<number> => {
+    const response = await api.get("/receitas/total");
+    return response.data;
+  },
 };

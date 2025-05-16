@@ -2,11 +2,10 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
-import { Home, TrendingUp, TrendingDown, Wallet, Calendar as CalendarIcon, PieChart, LineChart } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, Calendar as CalendarIcon, PieChart, LineChart } from "lucide-react";
 import { formatarMoeda } from "@/services/api";
 import { ReceitasService } from "@/services/receitas";
 import { DespesasService } from "@/services/despesas";
-import { LimitesService } from "@/services/limites";
 import { GraficosService } from "@/services/graficos";
 import { FinanceSummaryCard } from "@/components/dashboard/FinanceSummaryCard";
 import { GraficoReceitasDespesas } from "@/components/dashboard/GraficoReceitasDespesas";
@@ -34,11 +33,6 @@ const Dashboard = () => {
     queryFn: () => DespesasService.listarPorMesAno(mes, ano),
   });
 
-  const { data: limites = [], isLoading: isLoadingLimites } = useQuery({
-    queryKey: ["limites"],
-    queryFn: LimitesService.listar,
-  });
-
   const { data: dadosGrafico, isLoading: isLoadingGrafico } = useQuery({
     queryKey: ["grafico-receitas-despesas", mes, ano],
     queryFn: () => GraficosService.buscarReceitasDespesas(mes, ano),
@@ -53,19 +47,28 @@ const Dashboard = () => {
     },
   });
 
-  // Garantir que receitas, despesas e limites sejam arrays
+  // Buscar totais acumulados
+  const { data: totalReceitasAcumulado = 0 } = useQuery({
+    queryKey: ["total-receitas"],
+    queryFn: () => ReceitasService.buscarTotal(),
+  });
+
+  const { data: totalDespesasAcumulado = 0 } = useQuery({
+    queryKey: ["total-despesas"],
+    queryFn: () => DespesasService.buscarTotal(),
+  });
+
+  // Garantir que receitas e despesas sejam arrays
   const receitasArray = Array.isArray(receitas) ? receitas : [];
   const despesasArray = Array.isArray(despesas) ? despesas : [];
-  const limitesArray = Array.isArray(limites) ? limites : [];
 
   // Cálculos financeiros
   const totalReceitas = receitasArray.reduce((acc, receita) => acc + receita.valor, 0);
   const totalDespesas = despesasArray.reduce((acc, despesa) => acc + despesa.valor, 0);
   const saldo = totalReceitas - totalDespesas;
-  const totalLimites = limitesArray.reduce((acc, limite) => acc + limite.valor, 0);
 
   // Se os dados estiverem carregando, você pode mostrar um indicador de carregamento
-  if (isLoadingReceitas || isLoadingDespesas || isLoadingLimites || isLoadingGrafico || isLoadingVariacaoMensal) {
+  if (isLoadingReceitas || isLoadingDespesas || isLoadingGrafico || isLoadingVariacaoMensal) {
     return <div className="container mx-auto py-6">Carregando dados...</div>;
   }
 
@@ -98,10 +101,11 @@ const Dashboard = () => {
         </Popover>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6">
         <FinanceSummaryCard 
           title="Receitas" 
-          value={totalReceitas} 
+          value={totalReceitas}
+          totalValue={totalReceitasAcumulado}
           icon={<TrendingUp className="h-5 w-5" />} 
           color="bg-emerald-50 dark:bg-emerald-950"
           iconColor="text-emerald-500"
@@ -109,7 +113,8 @@ const Dashboard = () => {
         
         <FinanceSummaryCard 
           title="Despesas" 
-          value={totalDespesas} 
+          value={totalDespesas}
+          totalValue={totalDespesasAcumulado}
           icon={<TrendingDown className="h-5 w-5" />} 
           color="bg-rose-50 dark:bg-rose-950"
           iconColor="text-rose-500"
@@ -117,18 +122,11 @@ const Dashboard = () => {
         
         <FinanceSummaryCard 
           title="Saldo" 
-          value={saldo} 
+          value={saldo}
+          totalValue={totalReceitasAcumulado - totalDespesasAcumulado}
           icon={<Wallet className="h-5 w-5" />} 
           color="bg-blue-50 dark:bg-blue-950"
           iconColor="text-blue-500"
-        />
-        
-        <FinanceSummaryCard 
-          title="Limites" 
-          value={totalLimites} 
-          icon={<Home className="h-5 w-5" />} 
-          color="bg-purple-50 dark:bg-purple-950"
-          iconColor="text-purple-500"
         />
       </div>
 

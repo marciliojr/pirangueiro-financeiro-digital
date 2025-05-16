@@ -12,8 +12,6 @@ import Categorias from "./pages/Categorias";
 import Cartoes from "./pages/Cartoes";
 import Receitas from "./pages/Receitas";
 import Despesas from "./pages/Despesas";
-import Limites from "./pages/Limites";
-import Relatorios from "./pages/Relatorios";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -40,8 +38,6 @@ const App = () => (
               <Route path="/cartoes" element={<Cartoes />} />
               <Route path="/receitas" element={<Receitas />} />
               <Route path="/despesas" element={<Despesas />} />
-              <Route path="/limites" element={<Limites />} />
-              <Route path="/relatorios" element={<Relatorios />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Layout>

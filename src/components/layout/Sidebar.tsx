@@ -5,9 +5,7 @@ import {
   FolderOpen, 
   CreditCard, 
   PiggyBank, 
-  FileText, 
-  FileBarChart, 
-  SlidersHorizontal,
+  FileText,
   Menu, 
   X 
 } from "lucide-react";
@@ -50,9 +48,7 @@ export const Sidebar = () => {
     { to: "/categorias", label: "Categorias", icon: FolderOpen },
     { to: "/cartoes", label: "Cartões", icon: CreditCard },
     { to: "/receitas", label: "Receitas", icon: PiggyBank },
-    { to: "/despesas", label: "Despesas", icon: FileText },
-    { to: "/limites", label: "Limites de Gastos", icon: SlidersHorizontal },
-    { to: "/relatorios", label: "Relatórios", icon: FileBarChart },
+    { to: "/despesas", label: "Despesas", icon: FileText }
   ];
 
   const toggleSidebar = () => {

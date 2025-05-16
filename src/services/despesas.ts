@@ -75,4 +75,9 @@ export const DespesasService = {
   excluir: async (id: number): Promise<void> => {
     await api.delete(`/despesas/${id}`);
   },
+
+  buscarTotal: async (): Promise<number> => {
+    const response = await api.get("/despesas/total");
+    return response.data;
+  },
 };
