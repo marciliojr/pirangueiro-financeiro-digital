@@ -76,6 +76,9 @@ export function FaturaModal({ cartao, isOpen, onClose }: FaturaModalProps) {
       // Configurações do PDF A4
       const a4Width = 210; // largura A4 em mm
       const a4Height = 297; // altura A4 em mm
+      const margin = 20; // margem de 20mm em todos os lados
+      const contentWidth = a4Width - (2 * margin);
+      const contentHeight = a4Height - (2 * margin);
 
       // Configurar html2canvas
       const canvas = await html2canvas(faturaRef.current, {
@@ -90,48 +93,76 @@ export function FaturaModal({ cartao, isOpen, onClose }: FaturaModalProps) {
       });
       
       // Calcular dimensões mantendo proporção
-      const imgWidth = a4Width;
+      const imgWidth = contentWidth;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
       // Criar PDF
       const pdf = new jsPDF({
-        orientation: imgHeight > a4Height ? 'p' : 'p',
+        orientation: 'p',
         unit: 'mm',
         format: 'a4',
       });
 
-      // Se a altura da imagem for maior que a altura do A4, criar múltiplas páginas
-      if (imgHeight > a4Height) {
-        let heightLeft = imgHeight;
-        let position = 0;
-        let page = 1;
+      // Se a altura da imagem for maior que a altura útil do A4, criar múltiplas páginas
+      if (imgHeight > contentHeight) {
+        let remainingHeight = imgHeight;
+        let sourceY = 0;
+        let currentPage = 1;
 
-        while (heightLeft >= 0) {
+        while (remainingHeight > 0) {
+          // Altura da parte da imagem a ser renderizada nesta página
+          const pageContentHeight = Math.min(remainingHeight, contentHeight);
+          
+          // Calcular a proporção da altura do canvas para esta página
+          const sourceHeight = (pageContentHeight * canvas.height) / imgHeight;
+          
+          // Criar um canvas temporário para a parte da página atual
+          const tempCanvas = document.createElement('canvas');
+          tempCanvas.width = canvas.width;
+          tempCanvas.height = sourceHeight;
+          const tempCtx = tempCanvas.getContext('2d');
+          
+          if (tempCtx) {
+            tempCtx.drawImage(
+              canvas,
+              0,
+              sourceY,
+              canvas.width,
+              sourceHeight,
+              0,
+              0,
+              canvas.width,
+              sourceHeight
+            );
+          }
+
+          // Adicionar a parte da imagem ao PDF
           pdf.addImage(
-            canvas.toDataURL('image/png'),
+            tempCanvas.toDataURL('image/png'),
             'PNG',
-            0,
-            position,
-            imgWidth,
-            imgHeight
+            margin,
+            margin,
+            contentWidth,
+            pageContentHeight
           );
 
-          heightLeft -= a4Height;
-          position -= a4Height;
+          remainingHeight -= contentHeight;
+          sourceY += sourceHeight;
 
-          if (heightLeft >= 0) {
+          if (remainingHeight > 0) {
             pdf.addPage();
+            currentPage++;
           }
         }
       } else {
         // Se couber em uma página, centralizar verticalmente
-        const yPos = (a4Height - imgHeight) / 2;
+        const yPos = margin + (contentHeight - imgHeight) / 2;
         pdf.addImage(
           canvas.toDataURL('image/png'),
           'PNG',
-          0,
+          margin,
           yPos,
-          imgWidth,
+          contentWidth,
           imgHeight
         );
       }
