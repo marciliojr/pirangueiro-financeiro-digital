@@ -300,18 +300,18 @@ export function FaturaModal({ cartao, isOpen, onClose }: FaturaModalProps) {
                     ) : (
                       <>
                         {despesas.map((despesa) => (
-                          <TableRow key={despesa.id} className="hover:bg-gray-50">
-                            <TableCell className="font-medium">{despesa.descricao}</TableCell>
-                            <TableCell>{new Date(despesa.data).toLocaleDateString('pt-BR')}</TableCell>
-                            <TableCell>{despesa.categoria?.nome || "Sem categoria"}</TableCell>
-                            <TableCell className="text-right">{formatarMoeda(despesa.valor)}</TableCell>
+                          <TableRow key={despesa.id}>
+                            <TableCell className="font-medium text-blue-900 dark:text-blue-800">{despesa.descricao}</TableCell>
+                            <TableCell className="text-blue-900 dark:text-blue-800">{new Date(despesa.data).toLocaleDateString('pt-BR')}</TableCell>
+                            <TableCell className="text-blue-900 dark:text-blue-800">{despesa.categoria?.nome || "Sem categoria"}</TableCell>
+                            <TableCell className="text-right text-blue-900 dark:text-blue-800">{formatarMoeda(despesa.valor)}</TableCell>
                           </TableRow>
                         ))}
-                        <TableRow className="bg-gray-50 border-t-2">
-                          <TableCell colSpan={3} className="font-bold text-right text-lg">
+                        <TableRow className="border-t-2">
+                          <TableCell colSpan={3} className="font-bold text-right text-lg text-blue-900 dark:text-blue-800">
                             Total da Fatura
                           </TableCell>
-                          <TableCell className="font-bold text-right text-lg">
+                          <TableCell className="font-bold text-right text-lg text-blue-900 dark:text-blue-800">
                             {formatarMoeda(totalFatura)}
                           </TableCell>
                         </TableRow>
