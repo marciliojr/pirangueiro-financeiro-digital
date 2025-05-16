@@ -151,11 +151,13 @@ const Contas = () => {
               type="search"
               placeholder="Buscar contas..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                queryClient.invalidateQueries({ queryKey: ["contas"] });
+              }}
               className="pl-8"
             />
           </div>
-          <Button type="submit">Buscar</Button>
         </form>
       </div>
 
