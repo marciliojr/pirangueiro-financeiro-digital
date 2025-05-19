@@ -15,7 +15,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
 
 const Dashboard = () => {
@@ -130,51 +130,38 @@ const Dashboard = () => {
         />
       </div>
 
-      <Tabs defaultValue="categorias" className="w-full">
-        <div className="flex">
-          <TabsList className="flex flex-col h-fit space-y-2 mr-4">
-            <TabsTrigger 
-              value="categorias"
-              className={cn(
-                "w-full justify-start gap-2 px-4 py-2",
-                "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-              )}
-            >
+      <div className="mt-6">
+        <Accordion type="single" collapsible className="w-full">
+          <AccordionItem value="categorias">
+            <AccordionTrigger className="flex items-center gap-2">
               <PieChart className="h-4 w-4" />
-              Categorias
-            </TabsTrigger>
-            <TabsTrigger 
-              value="variacao"
-              className={cn(
-                "w-full justify-start gap-2 px-4 py-2",
-                "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-              )}
-            >
-              <LineChart className="h-4 w-4" />
-              Variação Mensal
-            </TabsTrigger>
-          </TabsList>
-
-          <div className="flex-1">
-            <TabsContent value="categorias" className="m-0">
+              <span>Categorias</span>
+            </AccordionTrigger>
+            <AccordionContent>
               {dadosGrafico && (
                 <GraficoReceitasDespesas 
                   receitas={dadosGrafico.receitas} 
                   despesas={dadosGrafico.despesas} 
                 />
               )}
-            </TabsContent>
+            </AccordionContent>
+          </AccordionItem>
 
-            <TabsContent value="variacao" className="m-0">
+          <AccordionItem value="variacao">
+            <AccordionTrigger className="flex items-center gap-2">
+              <LineChart className="h-4 w-4" />
+              <span>Variação Mensal</span>
+            </AccordionTrigger>
+            <AccordionContent>
               {dadosVariacaoMensal && dadosVariacaoMensal.totaisMensais && dadosVariacaoMensal.totaisMensais.length > 0 && (
                 <GraficoVariacaoMensalDespesas 
                   dados={dadosVariacaoMensal}
                 />
               )}
-            </TabsContent>
-          </div>
-        </div>
-      </Tabs>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </div>
     </div>
   );
 };
