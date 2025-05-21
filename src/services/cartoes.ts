@@ -4,6 +4,7 @@ export interface CartaoDTO {
   id?: number;
   nome: string;
   limite: number;
+  limiteUsado: number;
   diaFechamento: number;
   diaVencimento: number;
 }

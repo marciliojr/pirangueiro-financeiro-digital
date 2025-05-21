@@ -18,6 +18,10 @@ export interface DespesaDTO {
   categoriaId?: number;
   contaId?: number;
   cartaoId?: number;
+  quantidadeParcelas?: number;
+  numeroParcela?: number;
+  totalParcelas?: number;
+  pago?: boolean;
 }
 
 export interface PageDTO<T> {

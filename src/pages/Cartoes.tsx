@@ -50,9 +50,17 @@ const Cartoes = () => {
     setIsFormOpen(true);
   };
 
-  const openEditForm = (cartao: CartaoDTO) => {
-    setCurrentCartao(cartao);
-    setIsFormOpen(true);
+  const openEditForm = async (cartao: CartaoDTO) => {
+    try {
+      console.log('Cartão recebido para edição:', cartao);
+      const cartaoAtualizado = await CartoesService.buscarPorId(cartao.id!);
+      console.log('Cartão atualizado recebido do backend:', cartaoAtualizado);
+      setCurrentCartao(cartaoAtualizado);
+      setIsFormOpen(true);
+    } catch (error) {
+      console.error('Erro ao carregar dados do cartão:', error);
+      toast.error("Erro ao carregar dados do cartão");
+    }
   };
 
   const openDeleteDialog = (cartao: CartaoDTO) => {
@@ -200,7 +208,7 @@ const Cartoes = () => {
           onClose={() => setIsDeleteDialogOpen(false)}
           onConfirm={() => currentCartao.id && deleteMutation.mutate(currentCartao.id)}
           title="Excluir Cartão"
-          description={`Tem certeza que deseja excluir o cartão "${currentCartao.nome}"?`}
+          description={`Tem certeza que deseja excluir o cartão "${currentCartao.nome}" ? \n*Todas as despesas associadas a este cartão serão removidas.`}
           isLoading={deleteMutation.isPending}
         />
       )}

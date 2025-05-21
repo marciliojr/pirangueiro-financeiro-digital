@@ -245,11 +245,13 @@ export function ContaForm({ conta, isOpen, onClose, onSubmit }: ContaFormProps) 
                 <SelectValue placeholder="Selecione o tipo" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={TipoConta.CORRENTE}>Conta Corrente</SelectItem>
-                <SelectItem value={TipoConta.POUPANCA}>Poupança</SelectItem>
-                <SelectItem value={TipoConta.INVESTIMENTO}>Investimento</SelectItem>
-                <SelectItem value={TipoConta.CARTEIRA}>Carteira</SelectItem>
-                <SelectItem value={TipoConta.OUTRO}>Outro</SelectItem>
+                <SelectItem value={TipoConta.CORRENTE}>CONTA CORRENTE</SelectItem>
+                <SelectItem value={TipoConta.DIGITAL}>DIGITAL</SelectItem>
+                <SelectItem value={TipoConta.INVESTIMENTO}>INVESTIMENTO</SelectItem>
+                <SelectItem value={TipoConta.POUPANCA}>POUPANÇA</SelectItem>
+                <SelectItem value={TipoConta.SALARIO}>SALÁRIO</SelectItem>
+                <SelectItem value={TipoConta.CARTEIRA}>CARTEIRA</SelectItem>
+                <SelectItem value={TipoConta.OUTRO}>OUTRO</SelectItem>
               </SelectContent>
             </Select>
           </div>

@@ -1,6 +1,13 @@
 import axios from "axios";
 import { toast } from "sonner";
 
+interface ErroResponse {
+  mensagem: string;
+  codigo: string;
+  detalhe: string;
+  timestamp: string;
+}
+
 export const api = axios.create({
   baseURL: "/api",
   headers: {
@@ -12,8 +19,29 @@ export const api = axios.create({
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    const message = error.response?.data?.message || 'Ocorreu um erro ao processar a requisição';
-    toast.error(message);
+    const erroResponse = error.response?.data as ErroResponse;
+    
+    let mensagemErro = 'Ocorreu um erro ao processar a requisição';
+    
+    if (erroResponse) {
+      mensagemErro = `${erroResponse.mensagem}`;
+      
+      if (erroResponse.detalhe) {
+        mensagemErro += `\n: ${erroResponse.detalhe}`;
+      }
+      
+    }
+
+    toast.error(mensagemErro, {
+      duration: 10000,
+      style: {
+        color: '#ff0000',
+        fontWeight: 'bold',
+        backgroundColor: '#ffebeb',
+        border: '1px solid #ff0000',
+      },
+    });
+    
     return Promise.reject(error);
   }
 );
@@ -50,14 +78,14 @@ export const uploadArquivo = async (file: File): Promise<string> => {
 
 export function formatarValorMonetario(valor: string): string {
   // Remove tudo que não for número
-  let numero = valor.replace(/\D/g, '');
+  const numero = valor.replace(/\D/g, '');
   
-  // Converte para número e divide por 100 para ter os centavos
-  const valorNumerico = Number(numero) / 100;
+  // Converte para número sem dividir por 100
+  const valorNumerico = Number(numero);
   
   // Formata o número para o padrão brasileiro
-  return valorNumerico.toLocaleString('pt-BR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  });
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL'
+  }).format(valorNumerico);
 }

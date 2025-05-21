@@ -53,7 +53,9 @@ export function DespesaForm({ despesa, isOpen, onClose, onSubmit }: DespesaFormP
     contaId: despesa?.contaId || despesa?.conta?.id,
     cartaoId: despesa?.cartaoId || undefined,
     anexoUrl: despesa?.anexoUrl || despesa?.anexo || "",
-    observacao: despesa?.observacao || ""
+    observacao: despesa?.observacao || "",
+    quantidadeParcelas: despesa?.quantidadeParcelas || 1,
+    pago: despesa?.pago || false
   });
   const [valorFormatado, setValorFormatado] = useState(formData.valor ? formatarValorMonetario(formData.valor.toString()) : '0,00');
   const [file, setFile] = useState<File | null>(null);
@@ -125,11 +127,19 @@ export function DespesaForm({ despesa, isOpen, onClose, onSubmit }: DespesaFormP
   };
 
   const handleValorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const valorFormatado = formatarValorMonetario(e.target.value);
-    setValorFormatado(valorFormatado);
+    const valor = e.target.value.replace(/\D/g, '');
     
-    // Converte o valor formatado para número
-    const valorNumerico = Number(e.target.value.replace(/\D/g, '')) / 100;
+    // Converte para número considerando os centavos
+    const valorNumerico = Number(valor) / 100;
+    
+    // Formata o valor para exibição
+    const valorFormatado = new Intl.NumberFormat('pt-BR', {
+      style: 'decimal',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(valorNumerico);
+
+    setValorFormatado(valorFormatado);
     setFormData(prev => ({ ...prev, valor: valorNumerico }));
   };
 
@@ -173,6 +183,11 @@ export function DespesaForm({ despesa, isOpen, onClose, onSubmit }: DespesaFormP
     try {
       const updatedFormData = { ...formData };
       
+      // Remove o campo quantidadeParcelas se for 1
+      if (updatedFormData.quantidadeParcelas === 1) {
+        delete updatedFormData.quantidadeParcelas;
+      }
+      
       if (file) {
         setIsUploading(true);
         const anexoUrl = await uploadArquivo(file);
@@ -201,13 +216,15 @@ export function DespesaForm({ despesa, isOpen, onClose, onSubmit }: DespesaFormP
         contaId: despesa.conta?.id || despesa.contaId,
         cartaoId: despesa.cartao?.id || despesa.cartaoId,
       });
-      setValorFormatado(formatarValorMonetario(despesa.valor.toString()));
+      // Multiplicamos por 100 para garantir que o valor seja formatado corretamente
+      const valorEmCentavos = Math.round(despesa.valor * 100);
+      setValorFormatado(formatarValorMonetario(valorEmCentavos.toString()));
     }
   }, [despesa]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] md:max-w-[600px] lg:max-w-[800px]">
         <DialogHeader>
           <DialogTitle>{despesa ? "Editar Despesa" : "Nova Despesa"}</DialogTitle>
           <DialogDescription>
@@ -216,103 +233,165 @@ export function DespesaForm({ despesa, isOpen, onClose, onSubmit }: DespesaFormP
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="descricao">Descrição</Label>
-            <UppercaseInput
-              id="descricao"
-              name="descricao"
-              value={formData.descricao}
-              onChange={handleChange}
-              required
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="valor">Valor (R$)</Label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">R$</span>
-              <Input
-                id="valor"
-                name="valor"
-                value={valorFormatado}
-                onChange={handleValorChange}
-                className="pl-10"
-                placeholder="0,00"
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="descricao">Descrição</Label>
+              <UppercaseInput
+                id="descricao"
+                name="descricao"
+                value={formData.descricao}
+                onChange={handleChange}
                 required
               />
             </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="valor">Valor (R$)</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">R$</span>
+                <Input
+                  id="valor"
+                  name="valor"
+                  value={valorFormatado}
+                  onChange={handleValorChange}
+                  className="pl-10"
+                  placeholder="0,00"
+                  required
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="data">Data</Label>
+              <Input
+                id="data"
+                name="data"
+                type="date"
+                value={formData.data}
+                onChange={handleChange}
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="categoriaId">Categoria</Label>
+              <Select 
+                value={formData.categoriaId ? String(formData.categoriaId) : undefined}
+                onValueChange={(value) => handleSelectChange("categoriaId", value)}
+                required
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categorias.map((categoria) => (
+                    <SelectItem key={categoria.id} value={String(categoria.id!)}>
+                      {categoria.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="contaId">Conta</Label>
+              <Select 
+                value={formData.contaId ? String(formData.contaId) : "none"} 
+                onValueChange={(value) => {
+                  if (value === "none") {
+                    setFormData(prev => ({ ...prev, contaId: undefined }));
+                  } else {
+                    setFormData(prev => ({ ...prev, contaId: parseInt(value), cartaoId: undefined }));
+                  }
+                }}
+                disabled={formData.cartaoId !== undefined}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a conta" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nenhuma</SelectItem>
+                  {contas.map((conta) => (
+                    <SelectItem key={conta.id} value={String(conta.id)}>
+                      {conta.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="cartaoId">Cartão</Label>
+              <Select 
+                value={formData.cartaoId ? String(formData.cartaoId) : "none"} 
+                onValueChange={(value) => {
+                  if (value === "none") {
+                    setFormData(prev => ({ ...prev, cartaoId: undefined }));
+                  } else {
+                    setFormData(prev => ({ ...prev, cartaoId: parseInt(value), contaId: undefined }));
+                  }
+                }}
+                disabled={formData.contaId !== undefined}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o cartão" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nenhum</SelectItem>
+                  {cartoes.map((cartao) => (
+                    <SelectItem key={cartao.id} value={String(cartao.id)}>
+                      {cartao.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {formData.cartaoId && despesa?.id && (
+              <div className="space-y-2">
+                <Label htmlFor="quantidadeParcelas">Quantidade de Parcelas</Label>
+                <Input
+                  id="quantidadeParcelas"
+                  name="quantidadeParcelas"
+                  type="number"
+                  min="1"
+                  value={formData.quantidadeParcelas}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value);
+                    setFormData(prev => ({
+                      ...prev,
+                      quantidadeParcelas: value >= 1 ? value : 1
+                    }));
+                  }}
+                  placeholder="1"
+                  disabled
+                />
+              </div>
+            )}
+
+            {formData.cartaoId && (
+              <div className="space-y-2">
+                <Label htmlFor="pago">Prestação Paga</Label>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="pago"
+                    name="pago"
+                    checked={formData.pago}
+                    onChange={(e) => {
+                      setFormData(prev => ({
+                        ...prev,
+                        pago: e.target.checked
+                      }));
+                    }}
+                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                  <span className="text-sm text-gray-700">Marcar como paga</span>
+                </div>
+              </div>
+            )}
           </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="data">Data</Label>
-            <Input
-              id="data"
-              name="data"
-              type="date"
-              value={formData.data}
-              onChange={handleChange}
-              required
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="categoriaId">Categoria</Label>
-            <Select 
-              value={formData.categoriaId ? String(formData.categoriaId) : undefined}
-              onValueChange={(value) => handleSelectChange("categoriaId", value)}
-              required
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione a categoria" />
-              </SelectTrigger>
-              <SelectContent>
-                {categorias.map((categoria) => (
-                  <SelectItem key={categoria.id} value={String(categoria.id!)}>
-                    {categoria.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="contaId">Conta</Label>
-            <Select 
-              value={formData.contaId ? String(formData.contaId) : ""} 
-              onValueChange={(value) => handleSelectChange("contaId", value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione a conta" />
-              </SelectTrigger>
-              <SelectContent>
-                {contas.map((conta) => (
-                  <SelectItem key={conta.id} value={String(conta.id)}>
-                    {conta.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="cartaoId">Cartão</Label>
-            <Select 
-              value={formData.cartaoId ? String(formData.cartaoId) : ""} 
-              onValueChange={(value) => handleSelectChange("cartaoId", value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o cartão" />
-              </SelectTrigger>
-              <SelectContent>
-                {cartoes.map((cartao) => (
-                  <SelectItem key={cartao.id} value={String(cartao.id)}>
-                    {cartao.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="anexo">Anexo</Label>
             <div className="flex items-center gap-2">

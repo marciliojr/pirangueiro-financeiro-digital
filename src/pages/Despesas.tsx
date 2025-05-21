@@ -37,14 +37,17 @@ const meses = [
   { valor: 12, nome: "Dezembro" }
 ];
 
-// Gerar lista de anos (ano atual e 2 anos anteriores)
+// Gerar lista de anos (5 anos antes e 5 anos após o ano atual)
 const anoAtual = new Date().getFullYear();
-const anos = Array.from({ length: 3 }, (_, i) => anoAtual - i).sort((a, b) => b - a);
+const anos = Array.from(
+  { length: 11 }, 
+  (_, i) => anoAtual - 5 + i
+).sort((a, b) => b - a);
 
 const Despesas = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [mesSelecionado, setMesSelecionado] = useState<number | undefined>(undefined);
-  const [anoSelecionado, setAnoSelecionado] = useState<number | undefined>(undefined);
+  const [mesSelecionado, setMesSelecionado] = useState<number | undefined>(new Date().getMonth() + 1);
+  const [anoSelecionado, setAnoSelecionado] = useState<number | undefined>(new Date().getFullYear());
   const [paginaAtual, setPaginaAtual] = useState(0);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -254,18 +257,23 @@ const Despesas = () => {
       // Preparar dados para a tabela
       const despesasOrdenadas = sortDespesas(despesas);
       const dadosTabela = despesasOrdenadas.map((despesa, index) => [
-        (index + 1).toString(), // Número sequencial
+        (index + 1).toString(),
         despesa.descricao,
         formatarData(despesa.data),
         getCategoryName(despesa),
         getAccountName(despesa),
         getCardName(despesa),
-        formatarMoeda(despesa.valor)
+        formatarMoeda(despesa.valor),
+        (despesa.anexo || despesa.anexoUrl) ? "Sim" : "Não",
+        despesa.quantidadeParcelas && despesa.quantidadeParcelas > 1 
+          ? `${despesa.numeroParcela}/${despesa.totalParcelas}`
+          : "-",
+        despesa.cartao ? (despesa.pago ? 'Sim' : 'Não') : '-'
       ]);
       
       // Configurar e gerar a tabela
       const tableOptions: UserOptions = {
-        head: [['Nº', 'Descrição', 'Data', 'Categoria', 'Conta', 'Cartão', 'Valor']],
+        head: [['Nº', 'Descrição', 'Data', 'Categoria', 'Conta', 'Cartão', 'Valor', 'Anexo', 'Parcelas', 'Prestação Paga']],
         body: dadosTabela,
         startY: searchTerm || (mesSelecionado && anoSelecionado) ? 45 : 40,
         theme: 'striped',
@@ -281,7 +289,10 @@ const Despesas = () => {
           3: { cellWidth: 25 }, // Categoria
           4: { cellWidth: 25 }, // Conta
           5: { cellWidth: 25 }, // Cartão
-          6: { cellWidth: 25, halign: 'right' } // Valor
+          6: { cellWidth: 25, halign: 'right' }, // Valor
+          7: { cellWidth: 25, halign: 'center' }, // Anexo
+          8: { cellWidth: 25, halign: 'center' }, // Parcelas
+          9: { cellWidth: 25, halign: 'center' } // Prestação Paga
         }
       };
       
@@ -348,7 +359,7 @@ const Despesas = () => {
             value={mesSelecionado?.toString()}
             onValueChange={(value) => {
               setPaginaAtual(0);
-              setMesSelecionado(value ? parseInt(value) : undefined);
+              setMesSelecionado(value === "undefined" ? undefined : parseInt(value));
             }}
           >
             <SelectTrigger className="w-[180px]">
@@ -408,20 +419,22 @@ const Despesas = () => {
               <TableHead className="text-right">
                 <SortButton field="valor" label="Valor" className="justify-end" />
               </TableHead>
-              <TableHead>Anexo</TableHead>
+              <TableHead className="w-[100px]">Anexo</TableHead>
+              <TableHead className="w-[100px]">Parcelas</TableHead>
+              <TableHead className="w-[120px]">Prestação Paga</TableHead>
               <TableHead className="w-[100px]">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-10">
+                <TableCell colSpan={10} className="text-center py-10">
                   Carregando...
                 </TableCell>
               </TableRow>
             ) : !despesasPage?.content || despesasPage.content.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-10">
+                <TableCell colSpan={10} className="text-center py-10">
                   Nenhuma despesa encontrada
                 </TableCell>
               </TableRow>
@@ -447,6 +460,24 @@ const Despesas = () => {
                         <FileText className="h-4 w-4 mr-1" />
                         <span className="sr-only">Ver anexo</span>
                       </a>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {despesa.quantidadeParcelas && despesa.quantidadeParcelas > 1 ? (
+                      <span className="text-sm">
+                        {despesa.numeroParcela}/{despesa.totalParcelas}
+                      </span>
+                    ) : (
+                      <span className="text-sm text-gray-500">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {despesa.cartao ? (
+                      <span className={`text-sm font-medium ${despesa.pago ? 'text-green-600' : 'text-red-600'}`}>
+                        {despesa.pago ? 'Sim' : 'Não'}
+                      </span>
+                    ) : (
+                      <span className="text-sm text-gray-500">-</span>
                     )}
                   </TableCell>
                   <TableCell>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { CartoesService, CartaoDTO } from "@/services/cartoes";
@@ -38,12 +38,35 @@ export function CartaoForm({ cartao, isOpen, onClose, onSubmit }: CartaoFormProp
     id: cartao?.id || undefined,
     nome: cartao?.nome || "",
     limite: cartao?.limite || 0,
+    limiteUsado: cartao?.limiteUsado || 0,
     diaFechamento: cartao?.diaFechamento || 1,
     diaVencimento: cartao?.diaVencimento || 1
   });
-  const [limiteFormatado, setLimiteFormatado] = useState(formData.limite ? formatarValorMonetario(formData.limite.toString()) : '0,00');
+  const [limiteFormatado, setLimiteFormatado] = useState(
+    formData.limite !== null && formData.limite !== undefined 
+      ? formatarValorMonetario(formData.limite.toString()) 
+      : '0,00'
+  );
 
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (cartao) {
+      setFormData({
+        id: cartao.id,
+        nome: cartao.nome,
+        limite: cartao.limite || 0,
+        limiteUsado: cartao.limiteUsado || 0,
+        diaFechamento: cartao.diaFechamento || 1,
+        diaVencimento: cartao.diaVencimento || 1
+      });
+      setLimiteFormatado(
+        cartao.limite !== null && cartao.limite !== undefined 
+          ? formatarValorMonetario(cartao.limite.toString()) 
+          : '0,00'
+      );
+    }
+  }, [cartao]);
 
   const createMutation = useMutation({
     mutationFn: (data: CartaoDTO) => CartoesService.criar(data),
@@ -86,11 +109,19 @@ export function CartaoForm({ cartao, isOpen, onClose, onSubmit }: CartaoFormProp
   };
 
   const handleLimiteChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const valorFormatado = formatarValorMonetario(e.target.value);
-    setLimiteFormatado(valorFormatado);
+    const valor = e.target.value.replace(/\D/g, '');
     
-    // Converte o valor formatado para número
-    const valorNumerico = Number(e.target.value.replace(/\D/g, '')) / 100;
+    // Converte para número considerando os centavos
+    const valorNumerico = Number(valor) / 100;
+    
+    // Formata o valor para exibição
+    const valorFormatado = new Intl.NumberFormat('pt-BR', {
+      style: 'decimal',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(valorNumerico);
+
+    setLimiteFormatado(valorFormatado);
     setFormData(prev => ({ ...prev, limite: valorNumerico }));
   };
 
@@ -126,7 +157,7 @@ export function CartaoForm({ cartao, isOpen, onClose, onSubmit }: CartaoFormProp
             <UppercaseInput
               id="nome"
               name="nome"
-              value={formData.nome}
+              value={formData.nome || ""}
               onChange={handleChange}
               required
             />
@@ -147,6 +178,20 @@ export function CartaoForm({ cartao, isOpen, onClose, onSubmit }: CartaoFormProp
               />
             </div>
           </div>
+
+          {cartao && (
+            <div className="space-y-2">
+              <Label>Limite Usado</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">R$</span>
+                <Input
+                  value={formatarValorMonetario((formData.limiteUsado || 0).toString())}
+                  className="pl-10"
+                  disabled
+                />
+              </div>
+            </div>
+          )}
           
           <div className="space-y-2">
             <Label htmlFor="diaFechamento">Dia do Fechamento</Label>
@@ -156,7 +201,7 @@ export function CartaoForm({ cartao, isOpen, onClose, onSubmit }: CartaoFormProp
               type="number"
               min="1"
               max="31"
-              value={formData.diaFechamento}
+              value={formData.diaFechamento || 1}
               onChange={handleChange}
               required
             />
@@ -170,7 +215,7 @@ export function CartaoForm({ cartao, isOpen, onClose, onSubmit }: CartaoFormProp
               type="number"
               min="1"
               max="31"
-              value={formData.diaVencimento}
+              value={formData.diaVencimento || 1}
               onChange={handleChange}
               required
             />

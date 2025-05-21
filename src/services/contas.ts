@@ -2,6 +2,8 @@ import { api } from "./api";
 
 export enum TipoConta {
   CORRENTE = "CORRENTE",
+  SALARIO = "SALARIO",
+  DIGITAL = "DIGITAL",
   POUPANCA = "POUPANCA",
   INVESTIMENTO = "INVESTIMENTO",
   CARTEIRA = "CARTEIRA",

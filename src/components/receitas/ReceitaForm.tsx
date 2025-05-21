@@ -98,11 +98,19 @@ export function ReceitaForm({ receita, isOpen, onClose, onSubmit }: ReceitaFormP
   };
 
   const handleValorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const valorFormatado = formatarValorMonetario(e.target.value);
-    setValorFormatado(valorFormatado);
+    const valor = e.target.value.replace(/\D/g, '');
     
-    // Converte o valor formatado para número
-    const valorNumerico = Number(e.target.value.replace(/\D/g, '')) / 100;
+    // Converte para número considerando os centavos
+    const valorNumerico = Number(valor) / 100;
+    
+    // Formata o valor para exibição
+    const valorFormatado = new Intl.NumberFormat('pt-BR', {
+      style: 'decimal',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(valorNumerico);
+
+    setValorFormatado(valorFormatado);
     setFormData(prev => ({ ...prev, valor: valorNumerico }));
   };
 
