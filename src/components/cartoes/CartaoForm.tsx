@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { CartoesService, CartaoDTO } from "@/services/cartoes";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
@@ -42,6 +42,14 @@ export function CartaoForm({ cartao, isOpen, onClose, onSubmit }: CartaoFormProp
     diaFechamento: cartao?.diaFechamento || 1,
     diaVencimento: cartao?.diaVencimento || 1
   });
+
+  // Consulta do limite disponível apenas quando estiver editando
+  const { data: limiteDisponivel } = useQuery({
+    queryKey: ["limite-disponivel", cartao?.id],
+    queryFn: () => CartoesService.consultarLimiteDisponivel(cartao!.id!),
+    enabled: !!cartao?.id && isOpen,
+  });
+
   const [limiteFormatado, setLimiteFormatado] = useState(
     formData.limite !== null && formData.limite !== undefined 
       ? formatarValorMonetario(formData.limite.toString()) 
@@ -181,11 +189,11 @@ export function CartaoForm({ cartao, isOpen, onClose, onSubmit }: CartaoFormProp
 
           {cartao && (
             <div className="space-y-2">
-              <Label>Limite Usado</Label>
+              <Label>Limite Utilizado</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">R$</span>
                 <Input
-                  value={formatarValorMonetario((formData.limiteUsado || 0).toString())}
+                  value={limiteDisponivel !== undefined ? formatarValorMonetario((formData.limite - limiteDisponivel).toString()) : "Carregando..."}
                   className="pl-10"
                   disabled
                 />

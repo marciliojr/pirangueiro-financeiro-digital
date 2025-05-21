@@ -54,5 +54,10 @@ export const CartoesService = {
   buscarFatura: async (id: number, mes: number, ano: number): Promise<DespesaDTO[]> => {
     const response = await api.get(`/cartoes/${id}/despesas/fatura?mes=${mes}&ano=${ano}`);
     return response.data;
+  },
+
+  consultarLimiteDisponivel: async (id: number): Promise<number> => {
+    const response = await api.get(`/cartoes/${id}/limite-disponivel`);
+    return response.data;
   }
 }; 

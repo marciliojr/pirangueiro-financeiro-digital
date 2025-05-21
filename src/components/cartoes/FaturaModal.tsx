@@ -21,7 +21,7 @@ interface FaturaModalProps {
 // Obter mês e ano atual para o filtro inicial
 const dataAtual = new Date();
 const mesAtual = dataAtual.getMonth() + 1;
-const anoAtual = dataAtual.getFullYear();
+const anoAtual = new Date().getFullYear();
 
 const meses = [
   { valor: 1, nome: "Janeiro" },
@@ -38,8 +38,13 @@ const meses = [
   { valor: 12, nome: "Dezembro" }
 ];
 
+const anos = Array.from(
+  { length: 11 }, 
+  (_, i) => anoAtual - 5 + i
+).sort((a, b) => b - a);
+
 // Gerar lista de anos (ano atual e 2 anos anteriores)
-const anos = Array.from({ length: 3 }, (_, i) => anoAtual - i).sort((a, b) => b - a);
+//const anos = Array.from({ length: 3 }, (_, i) => anoAtual - i).sort((a, b) => b - a);
 
 export function FaturaModal({ cartao, isOpen, onClose }: FaturaModalProps) {
   const [mesSelecionado, setMesSelecionado] = useState<number>(mesAtual);

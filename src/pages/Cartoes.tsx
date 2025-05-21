@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueries, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { CartoesService, CartaoDTO } from "@/services/cartoes";
 import { PageHeader } from "@/components/ui/page-header";
@@ -28,6 +28,29 @@ const Cartoes = () => {
       ? CartoesService.buscarPorNome(searchTerm)
       : CartoesService.listar(),
   });
+
+  // Consultar limite disponível para cada cartão
+  const limiteDisponivelResults = useQueries({
+    queries: cartoes.map(cartao => ({
+      queryKey: ["limite-disponivel", cartao.id],
+      queryFn: () => CartoesService.consultarLimiteDisponivel(cartao.id!),
+      enabled: !!cartao.id
+    }))
+  });
+
+  // Função para obter o limite utilizado de um cartão
+  const getLimiteUtilizado = (cartaoId: number) => {
+    const queryIndex = cartoes.findIndex(cartao => cartao.id === cartaoId);
+    const queryResult = limiteDisponivelResults[queryIndex];
+    
+    if (queryResult?.data !== undefined) {
+      const cartao = cartoes.find(c => c.id === cartaoId);
+      if (cartao) {
+        return cartao.limite - queryResult.data;
+      }
+    }
+    return 0;
+  };
 
   // Mutação para excluir cartão
   const deleteMutation = useMutation({
@@ -120,6 +143,7 @@ const Cartoes = () => {
             <TableRow>
               <TableHead>Nome</TableHead>
               <TableHead className="text-right">Limite</TableHead>
+              <TableHead className="text-right">Limite Utilizado</TableHead>
               <TableHead>Fechamento</TableHead>
               <TableHead>Vencimento</TableHead>
               <TableHead>Fatura</TableHead>
@@ -129,13 +153,13 @@ const Cartoes = () => {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-10">
+                <TableCell colSpan={7} className="text-center py-10">
                   Carregando...
                 </TableCell>
               </TableRow>
             ) : cartoes.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-10">
+                <TableCell colSpan={7} className="text-center py-10">
                   Nenhum cartão encontrado
                 </TableCell>
               </TableRow>
@@ -150,6 +174,9 @@ const Cartoes = () => {
                   </TableCell>
                   <TableCell className="text-right font-medium">
                     {formatarMoeda(cartao.limite)}
+                  </TableCell>
+                  <TableCell className="text-right font-medium">
+                    {formatarMoeda(getLimiteUtilizado(cartao.id!))}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
