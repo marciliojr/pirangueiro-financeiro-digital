@@ -347,6 +347,29 @@ export function DespesaForm({ despesa, isOpen, onClose, onSubmit }: DespesaFormP
               </Select>
             </div>
 
+            {/* Campo de quantidade de parcelas - mostrar apenas no cadastro quando cartão selecionado */}
+            {formData.cartaoId && !despesa?.id && (
+              <div className="space-y-2">
+                <Label htmlFor="quantidadeParcelas">Quantidade de Parcelas</Label>
+                <Input
+                  id="quantidadeParcelas"
+                  name="quantidadeParcelas"
+                  type="number"
+                  min="1"
+                  value={formData.quantidadeParcelas}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value);
+                    setFormData(prev => ({
+                      ...prev,
+                      quantidadeParcelas: value >= 1 ? value : 1
+                    }));
+                  }}
+                  placeholder="1"
+                />
+              </div>
+            )}
+
+            {/* Campo de quantidade de parcelas - mostrar na edição quando tem cartão */}
             {formData.cartaoId && despesa?.id && (
               <div className="space-y-2">
                 <Label htmlFor="quantidadeParcelas">Quantidade de Parcelas</Label>
@@ -369,7 +392,8 @@ export function DespesaForm({ despesa, isOpen, onClose, onSubmit }: DespesaFormP
               </div>
             )}
 
-            {formData.cartaoId && (
+            {/* Campo de prestação paga - mostrar apenas na edição quando tem cartão */}
+            {formData.cartaoId && despesa?.id && (
               <div className="space-y-2">
                 <Label htmlFor="pago">Prestação Paga</Label>
                 <div className="flex items-center space-x-2">
