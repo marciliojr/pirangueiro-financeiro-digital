@@ -54,7 +54,8 @@ const Cartoes = () => {
 
   // Mutação para excluir cartão
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => CartoesService.excluir(id),
+    mutationFn: ({ id, manterDespesas }: { id: number; manterDespesas: boolean }) => 
+      CartoesService.excluir(id, manterDespesas),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cartoes"] });
       toast.success("Cartão excluído com sucesso!");
@@ -233,10 +234,11 @@ const Cartoes = () => {
         <ConfirmDialog
           isOpen={isDeleteDialogOpen}
           onClose={() => setIsDeleteDialogOpen(false)}
-          onConfirm={() => currentCartao.id && deleteMutation.mutate(currentCartao.id)}
+          onConfirm={(manterDespesas) => currentCartao.id && deleteMutation.mutate({ id: currentCartao.id, manterDespesas: manterDespesas || false })}
           title="Excluir Cartão"
-          description={`Tem certeza que deseja excluir o cartão "${currentCartao.nome}" ? \n*Todas as despesas associadas a este cartão serão removidas.`}
+          description={`Tem certeza que deseja excluir o cartão "${currentCartao.nome}"?`}
           isLoading={deleteMutation.isPending}
+          showManterDespesasOption={true}
         />
       )}
 

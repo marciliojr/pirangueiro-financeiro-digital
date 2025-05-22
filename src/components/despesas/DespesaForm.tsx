@@ -216,9 +216,8 @@ export function DespesaForm({ despesa, isOpen, onClose, onSubmit }: DespesaFormP
         contaId: despesa.conta?.id || despesa.contaId,
         cartaoId: despesa.cartao?.id || despesa.cartaoId,
       });
-      // Multiplicamos por 100 para garantir que o valor seja formatado corretamente
-      const valorEmCentavos = Math.round(despesa.valor * 100);
-      setValorFormatado(formatarValorMonetario(valorEmCentavos.toString()));
+      // Formata o valor corretamente
+      setValorFormatado(formatarValorMonetario((despesa.valor * 100).toFixed(0)));
     }
   }, [despesa]);
 

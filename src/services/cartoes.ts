@@ -47,8 +47,8 @@ export const CartoesService = {
     return response.data;
   },
 
-  excluir: async (id: number): Promise<void> => {
-    await api.delete(`/cartoes/${id}`);
+  excluir: async (id: number, manterDespesas: boolean = false): Promise<void> => {
+    await api.delete(`/cartoes/${id}?manterDespesas=${manterDespesas}`);
   },
 
   buscarFatura: async (id: number, mes: number, ano: number): Promise<DespesaDTO[]> => {

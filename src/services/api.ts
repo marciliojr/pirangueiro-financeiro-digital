@@ -80,12 +80,13 @@ export function formatarValorMonetario(valor: string): string {
   // Remove tudo que não for número
   const numero = valor.replace(/\D/g, '');
   
-  // Converte para número sem dividir por 100
-  const valorNumerico = Number(numero);
+  // Converte para número considerando os centavos
+  const valorNumerico = Number(numero) / 100;
   
   // Formata o número para o padrão brasileiro
   return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL'
+    style: 'decimal',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(valorNumerico);
 }
