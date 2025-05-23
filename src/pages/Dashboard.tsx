@@ -2,14 +2,13 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
-import { TrendingUp, TrendingDown, Wallet, Calendar as CalendarIcon, PieChart, LineChart, Activity, CreditCard, TrendingUpIcon } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, Calendar as CalendarIcon, PieChart, Activity, CreditCard, TrendingUpIcon } from "lucide-react";
 import { formatarMoeda } from "@/services/api";
 import { ReceitasService } from "@/services/receitas";
 import { DespesasService } from "@/services/despesas";
 import { GraficosService } from "@/services/graficos";
 import { FinanceSummaryCard } from "@/components/dashboard/FinanceSummaryCard";
 import { GraficoReceitasDespesas } from "@/components/dashboard/GraficoReceitasDespesas";
-import { GraficoVariacaoMensalDespesas } from "@/components/dashboard/GraficoVariacaoMensalDespesas";
 import { GraficoSaudeFinanceira } from "@/components/dashboard/GraficoSaudeFinanceira";
 import { GraficoDespesasCartao } from "@/components/dashboard/GraficoDespesasCartao";
 import { GraficoSazonalidadeGastos } from "@/components/dashboard/GraficoSazonalidadeGastos";
@@ -40,15 +39,6 @@ const Dashboard = () => {
   const { data: dadosGrafico, isLoading: isLoadingGrafico } = useQuery({
     queryKey: ["grafico-receitas-despesas", mes, ano],
     queryFn: () => GraficosService.buscarReceitasDespesas(mes, ano),
-  });
-
-  const { data: dadosVariacaoMensal, isLoading: isLoadingVariacaoMensal } = useQuery({
-    queryKey: ["grafico-variacao-mensal-despesas", ano],
-    queryFn: async () => {
-      const dados = await GraficosService.buscarVariacaoMensalDespesas(ano);
-      console.log('Dados recebidos da API:', dados);
-      return dados;
-    },
   });
 
   const { data: dadosSaudeFinanceira, isLoading: isLoadingSaudeFinanceira } = useQuery({
@@ -87,11 +77,9 @@ const Dashboard = () => {
   const saldo = totalReceitas - totalDespesas;
 
   // Se os dados estiverem carregando, você pode mostrar um indicador de carregamento
-  if (isLoadingReceitas || isLoadingDespesas || isLoadingGrafico || isLoadingVariacaoMensal || isLoadingSaudeFinanceira || isLoadingDespesasCartao || isLoadingSazonalidade) {
+  if (isLoadingReceitas || isLoadingDespesas || isLoadingGrafico || isLoadingSaudeFinanceira || isLoadingDespesasCartao || isLoadingSazonalidade) {
     return <div className="container mx-auto py-6">Carregando dados...</div>;
   }
-
-  console.log('Estado atual dos dados de variação mensal:', dadosVariacaoMensal);
 
   return (
     <div className="container mx-auto py-6">
@@ -163,10 +151,6 @@ const Dashboard = () => {
             <PieChart className="h-4 w-4" />
             <span>Categorias</span>
           </TabsTrigger>
-          <TabsTrigger value="variacao" className="flex items-center gap-2">
-            <LineChart className="h-4 w-4" />
-            <span>Variação Mensal</span>
-          </TabsTrigger>
           <TabsTrigger value="sazonalidade" className="flex items-center gap-2">
             <TrendingUpIcon className="h-4 w-4" />
             <span>Sazonalidade</span>
@@ -193,14 +177,6 @@ const Dashboard = () => {
             <GraficoReceitasDespesas 
               receitas={dadosGrafico.receitas} 
               despesas={dadosGrafico.despesas} 
-            />
-          )}
-        </TabsContent>
-
-        <TabsContent value="variacao">
-          {dadosVariacaoMensal && dadosVariacaoMensal.totaisMensais && dadosVariacaoMensal.totaisMensais.length > 0 && (
-            <GraficoVariacaoMensalDespesas 
-              dados={dadosVariacaoMensal}
             />
           )}
         </TabsContent>
