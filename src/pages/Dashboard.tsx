@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
-import { TrendingUp, TrendingDown, Wallet, Calendar as CalendarIcon, PieChart, LineChart, Activity } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, Calendar as CalendarIcon, PieChart, LineChart, Activity, CreditCard } from "lucide-react";
 import { formatarMoeda } from "@/services/api";
 import { ReceitasService } from "@/services/receitas";
 import { DespesasService } from "@/services/despesas";
@@ -11,6 +11,7 @@ import { FinanceSummaryCard } from "@/components/dashboard/FinanceSummaryCard";
 import { GraficoReceitasDespesas } from "@/components/dashboard/GraficoReceitasDespesas";
 import { GraficoVariacaoMensalDespesas } from "@/components/dashboard/GraficoVariacaoMensalDespesas";
 import { GraficoSaudeFinanceira } from "@/components/dashboard/GraficoSaudeFinanceira";
+import { GraficoDespesasCartao } from "@/components/dashboard/GraficoDespesasCartao";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -21,6 +22,7 @@ import { cn } from "@/lib/utils";
 
 const Dashboard = () => {
   const [date, setDate] = useState<Date>(new Date());
+  const [mesesAtrasCartao, setMesesAtrasCartao] = useState<number>(12);
   const mes = date.getMonth() + 1;
   const ano = date.getFullYear();
 
@@ -53,6 +55,11 @@ const Dashboard = () => {
     queryFn: () => GraficosService.buscarDashboardFinanceiro(mes, ano),
   });
 
+  const { data: dadosDespesasCartao, isLoading: isLoadingDespesasCartao } = useQuery({
+    queryKey: ["grafico-despesas-cartao", mesesAtrasCartao],
+    queryFn: () => GraficosService.buscarDespesasPorCartao(mesesAtrasCartao),
+  });
+
   // Buscar totais acumulados
   const { data: totalReceitasAcumulado = 0 } = useQuery({
     queryKey: ["total-receitas"],
@@ -74,7 +81,7 @@ const Dashboard = () => {
   const saldo = totalReceitas - totalDespesas;
 
   // Se os dados estiverem carregando, você pode mostrar um indicador de carregamento
-  if (isLoadingReceitas || isLoadingDespesas || isLoadingGrafico || isLoadingVariacaoMensal || isLoadingSaudeFinanceira) {
+  if (isLoadingReceitas || isLoadingDespesas || isLoadingGrafico || isLoadingVariacaoMensal || isLoadingSaudeFinanceira || isLoadingDespesasCartao) {
     return <div className="container mx-auto py-6">Carregando dados...</div>;
   }
 
@@ -107,7 +114,7 @@ const Dashboard = () => {
         </Popover>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6">
+      <div className="grid gap-4 md:grid-cols-3 mb-6">
         <FinanceSummaryCard 
           title="Receitas" 
           value={totalReceitas}
@@ -136,50 +143,63 @@ const Dashboard = () => {
         />
       </div>
 
-      <div className="mt-6">
-        <Accordion type="single" collapsible className="w-full" defaultValue="saude-financeira">
-          <AccordionItem value="saude-financeira">
-            <AccordionTrigger className="flex items-center gap-2">
-              <Activity className="h-4 w-4" />
-              <span>Saúde Financeira</span>
-            </AccordionTrigger>
-            <AccordionContent>
-              {dadosSaudeFinanceira && (
-                <GraficoSaudeFinanceira dados={dadosSaudeFinanceira} />
-              )}
-            </AccordionContent>
-          </AccordionItem>
+      <Accordion type="single" collapsible className="w-full space-y-4">
+        <AccordionItem value="saude-financeira">
+          <AccordionTrigger className="flex items-center gap-2">
+            <Activity className="h-4 w-4" />
+            <span>Saúde Financeira</span>
+          </AccordionTrigger>
+          <AccordionContent>
+            {dadosSaudeFinanceira && (
+              <GraficoSaudeFinanceira dados={dadosSaudeFinanceira} />
+            )}
+          </AccordionContent>
+        </AccordionItem>
 
-          <AccordionItem value="categorias">
-            <AccordionTrigger className="flex items-center gap-2">
-              <PieChart className="h-4 w-4" />
-              <span>Categorias</span>
-            </AccordionTrigger>
-            <AccordionContent>
-              {dadosGrafico && (
-                <GraficoReceitasDespesas 
-                  receitas={dadosGrafico.receitas} 
-                  despesas={dadosGrafico.despesas} 
-                />
-              )}
-            </AccordionContent>
-          </AccordionItem>
+        <AccordionItem value="despesas-cartao">
+          <AccordionTrigger className="flex items-center gap-2">
+            <CreditCard className="h-4 w-4" />
+            <span>Despesas por Cartão</span>
+          </AccordionTrigger>
+          <AccordionContent>
+            {dadosDespesasCartao && (
+              <GraficoDespesasCartao 
+                dados={dadosDespesasCartao} 
+                onMesesChange={setMesesAtrasCartao}
+              />
+            )}
+          </AccordionContent>
+        </AccordionItem>
 
-          <AccordionItem value="variacao">
-            <AccordionTrigger className="flex items-center gap-2">
-              <LineChart className="h-4 w-4" />
-              <span>Variação Mensal</span>
-            </AccordionTrigger>
-            <AccordionContent>
-              {dadosVariacaoMensal && dadosVariacaoMensal.totaisMensais && dadosVariacaoMensal.totaisMensais.length > 0 && (
-                <GraficoVariacaoMensalDespesas 
-                  dados={dadosVariacaoMensal}
-                />
-              )}
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-      </div>
+        <AccordionItem value="categorias">
+          <AccordionTrigger className="flex items-center gap-2">
+            <PieChart className="h-4 w-4" />
+            <span>Categorias</span>
+          </AccordionTrigger>
+          <AccordionContent>
+            {dadosGrafico && (
+              <GraficoReceitasDespesas 
+                receitas={dadosGrafico.receitas} 
+                despesas={dadosGrafico.despesas} 
+              />
+            )}
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="variacao">
+          <AccordionTrigger className="flex items-center gap-2">
+            <LineChart className="h-4 w-4" />
+            <span>Variação Mensal</span>
+          </AccordionTrigger>
+          <AccordionContent>
+            {dadosVariacaoMensal && dadosVariacaoMensal.totaisMensais && dadosVariacaoMensal.totaisMensais.length > 0 && (
+              <GraficoVariacaoMensalDespesas 
+                dados={dadosVariacaoMensal}
+              />
+            )}
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </div>
   );
 };
