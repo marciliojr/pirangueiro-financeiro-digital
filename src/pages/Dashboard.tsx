@@ -147,15 +147,15 @@ const Dashboard = () => {
         <TabsList className="w-full justify-start border-b mb-6">
           <TabsTrigger value="saude-financeira" className="flex items-center gap-2">
             <Activity className="h-4 w-4" />
-            <span>Saúde Financeira</span>
-          </TabsTrigger>
-          <TabsTrigger value="tendencia-gastos" className="flex items-center gap-2">
-            <TrendingUp className="h-4 w-4" />
-            <span>Tendência de Gastos</span>
+            <span>Saúde Cartões</span>
           </TabsTrigger>
           <TabsTrigger value="despesas-cartao" className="flex items-center gap-2">
             <CreditCard className="h-4 w-4" />
             <span>Despesas por Cartão</span>
+          </TabsTrigger>
+          <TabsTrigger value="tendencia-gastos" className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4" />
+            <span>Tendência de Gastos</span>
           </TabsTrigger>
           <TabsTrigger value="categorias" className="flex items-center gap-2">
             <PieChart className="h-4 w-4" />

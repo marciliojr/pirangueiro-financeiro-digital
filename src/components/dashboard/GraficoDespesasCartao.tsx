@@ -78,6 +78,9 @@ export function GraficoDespesasCartao({ dados, onMesesChange }: GraficoDespesasC
                                 <SelectItem value="3">Últimos 3 meses</SelectItem>
                                 <SelectItem value="6">Últimos 6 meses</SelectItem>
                                 <SelectItem value="12">Últimos 12 meses</SelectItem>
+                                <SelectItem value="18">Período de 18 meses</SelectItem>
+                                <SelectItem value="24">Período de 24 meses</SelectItem>
+                                <SelectItem value="48">Período de 48 meses</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>

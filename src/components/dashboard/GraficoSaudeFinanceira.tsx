@@ -20,13 +20,13 @@ export function GraficoSaudeFinanceira({ dados }: GraficoSaudeFinanceiraProps) {
     return (
         <Card className="col-span-full">
             <CardHeader>
-                <CardTitle>Análise de Saúde Financeira</CardTitle>
+                <CardTitle>Análise de Saúde Financeira dos Cartões</CardTitle>
             </CardHeader>
             <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                     {/* Saldo Atual */}
                     <div className="space-y-2">
-                        <h3 className="text-sm font-medium text-muted-foreground">Saldo Atual</h3>
+                        <h3 className="text-sm font-medium text-muted-foreground">Saldo Atual no Mês</h3>
                         <p className={`text-2xl font-bold ${dados.saldoAtual >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                             {formatarMoeda(dados.saldoAtual)}
                         </p>
