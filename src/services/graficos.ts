@@ -51,6 +51,15 @@ export interface GraficoSazonalidadeGastosDTO {
     mesMenorGasto: string;
 }
 
+export interface GraficoTendenciaGastosDTO {
+    meses: string[];
+    valores: number[];
+    coeficienteAngular: number;
+    mediaGastos: number;
+    tendencia: string;
+    valorPrevistoProximoMes: number;
+}
+
 export const GraficosService = {
     buscarReceitasDespesas: async (mes: number, ano: number): Promise<GraficoReceitasDespesasDTO> => {
         try {
@@ -155,6 +164,23 @@ export const GraficosService = {
                 menorMedia: 0,
                 mesMaiorGasto: "",
                 mesMenorGasto: ""
+            };
+        }
+    },
+
+    buscarTendenciaGastos: async (): Promise<GraficoTendenciaGastosDTO> => {
+        try {
+            const response = await api.get('/graficos/tendencia-gastos');
+            return response.data;
+        } catch (error) {
+            console.error("Erro ao buscar tendência de gastos:", error);
+            return {
+                meses: [],
+                valores: [],
+                coeficienteAngular: 0,
+                mediaGastos: 0,
+                tendencia: "ESTÁVEL",
+                valorPrevistoProximoMes: 0
             };
         }
     }

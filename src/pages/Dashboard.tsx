@@ -12,6 +12,7 @@ import { GraficoReceitasDespesas } from "@/components/dashboard/GraficoReceitasD
 import { GraficoSaudeFinanceira } from "@/components/dashboard/GraficoSaudeFinanceira";
 import { GraficoDespesasCartao } from "@/components/dashboard/GraficoDespesasCartao";
 import { GraficoSazonalidadeGastos } from "@/components/dashboard/GraficoSazonalidadeGastos";
+import { GraficoTendenciaGastos } from "@/components/dashboard/GraficoTendenciaGastos";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -56,6 +57,11 @@ const Dashboard = () => {
     queryFn: () => GraficosService.buscarSazonalidadeGastos(),
   });
 
+  const { data: dadosTendenciaGastos, isLoading: isLoadingTendenciaGastos } = useQuery({
+    queryKey: ["grafico-tendencia-gastos"],
+    queryFn: () => GraficosService.buscarTendenciaGastos(),
+  });
+
   // Buscar totais acumulados
   const { data: totalReceitasAcumulado = 0 } = useQuery({
     queryKey: ["total-receitas"],
@@ -77,7 +83,7 @@ const Dashboard = () => {
   const saldo = totalReceitas - totalDespesas;
 
   // Se os dados estiverem carregando, você pode mostrar um indicador de carregamento
-  if (isLoadingReceitas || isLoadingDespesas || isLoadingGrafico || isLoadingSaudeFinanceira || isLoadingDespesasCartao || isLoadingSazonalidade) {
+  if (isLoadingReceitas || isLoadingDespesas || isLoadingGrafico || isLoadingSaudeFinanceira || isLoadingDespesasCartao || isLoadingSazonalidade || isLoadingTendenciaGastos) {
     return <div className="container mx-auto py-6">Carregando dados...</div>;
   }
 
@@ -143,6 +149,10 @@ const Dashboard = () => {
             <Activity className="h-4 w-4" />
             <span>Saúde Financeira</span>
           </TabsTrigger>
+          <TabsTrigger value="tendencia-gastos" className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4" />
+            <span>Tendência de Gastos</span>
+          </TabsTrigger>
           <TabsTrigger value="despesas-cartao" className="flex items-center gap-2">
             <CreditCard className="h-4 w-4" />
             <span>Despesas por Cartão</span>
@@ -160,6 +170,12 @@ const Dashboard = () => {
         <TabsContent value="saude-financeira">
           {dadosSaudeFinanceira && (
             <GraficoSaudeFinanceira dados={dadosSaudeFinanceira} />
+          )}
+        </TabsContent>
+
+        <TabsContent value="tendencia-gastos">
+          {dadosTendenciaGastos && (
+            <GraficoTendenciaGastos dados={dadosTendenciaGastos} />
           )}
         </TabsContent>
 
