@@ -52,6 +52,15 @@ export interface GraficoDespesasCartaoDTO {
     valorTotalPeriodo: number;
 }
 
+export interface GraficoSazonalidadeGastosDTO {
+    meses: string[];
+    mediasGastos: number[];
+    maiorMedia: number;
+    menorMedia: number;
+    mesMaiorGasto: string;
+    mesMenorGasto: string;
+}
+
 export const GraficosService = {
     buscarReceitasDespesas: async (mes: number, ano: number): Promise<GraficoReceitasDespesasDTO> => {
         try {
@@ -152,6 +161,23 @@ export const GraficosService = {
                 meses: [],
                 series: [],
                 valorTotalPeriodo: 0
+            };
+        }
+    },
+
+    buscarSazonalidadeGastos: async (): Promise<GraficoSazonalidadeGastosDTO> => {
+        try {
+            const response = await api.get('/graficos/sazonalidade-gastos');
+            return response.data;
+        } catch (error) {
+            console.error("Erro ao buscar sazonalidade de gastos:", error);
+            return {
+                meses: [],
+                mediasGastos: [],
+                maiorMedia: 0,
+                menorMedia: 0,
+                mesMaiorGasto: "",
+                mesMenorGasto: ""
             };
         }
     }

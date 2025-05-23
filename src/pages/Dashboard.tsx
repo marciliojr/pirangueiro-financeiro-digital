@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
-import { TrendingUp, TrendingDown, Wallet, Calendar as CalendarIcon, PieChart, LineChart, Activity, CreditCard } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, Calendar as CalendarIcon, PieChart, LineChart, Activity, CreditCard, TrendingUpIcon } from "lucide-react";
 import { formatarMoeda } from "@/services/api";
 import { ReceitasService } from "@/services/receitas";
 import { DespesasService } from "@/services/despesas";
@@ -12,6 +12,7 @@ import { GraficoReceitasDespesas } from "@/components/dashboard/GraficoReceitasD
 import { GraficoVariacaoMensalDespesas } from "@/components/dashboard/GraficoVariacaoMensalDespesas";
 import { GraficoSaudeFinanceira } from "@/components/dashboard/GraficoSaudeFinanceira";
 import { GraficoDespesasCartao } from "@/components/dashboard/GraficoDespesasCartao";
+import { GraficoSazonalidadeGastos } from "@/components/dashboard/GraficoSazonalidadeGastos";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -60,6 +61,11 @@ const Dashboard = () => {
     queryFn: () => GraficosService.buscarDespesasPorCartao(mesesAtrasCartao),
   });
 
+  const { data: dadosSazonalidade, isLoading: isLoadingSazonalidade } = useQuery({
+    queryKey: ["grafico-sazonalidade-gastos"],
+    queryFn: () => GraficosService.buscarSazonalidadeGastos(),
+  });
+
   // Buscar totais acumulados
   const { data: totalReceitasAcumulado = 0 } = useQuery({
     queryKey: ["total-receitas"],
@@ -81,7 +87,7 @@ const Dashboard = () => {
   const saldo = totalReceitas - totalDespesas;
 
   // Se os dados estiverem carregando, você pode mostrar um indicador de carregamento
-  if (isLoadingReceitas || isLoadingDespesas || isLoadingGrafico || isLoadingVariacaoMensal || isLoadingSaudeFinanceira || isLoadingDespesasCartao) {
+  if (isLoadingReceitas || isLoadingDespesas || isLoadingGrafico || isLoadingVariacaoMensal || isLoadingSaudeFinanceira || isLoadingDespesasCartao || isLoadingSazonalidade) {
     return <div className="container mx-auto py-6">Carregando dados...</div>;
   }
 
@@ -161,6 +167,10 @@ const Dashboard = () => {
             <LineChart className="h-4 w-4" />
             <span>Variação Mensal</span>
           </TabsTrigger>
+          <TabsTrigger value="sazonalidade" className="flex items-center gap-2">
+            <TrendingUpIcon className="h-4 w-4" />
+            <span>Sazonalidade</span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="saude-financeira">
@@ -191,6 +201,14 @@ const Dashboard = () => {
           {dadosVariacaoMensal && dadosVariacaoMensal.totaisMensais && dadosVariacaoMensal.totaisMensais.length > 0 && (
             <GraficoVariacaoMensalDespesas 
               dados={dadosVariacaoMensal}
+            />
+          )}
+        </TabsContent>
+
+        <TabsContent value="sazonalidade">
+          {dadosSazonalidade && (
+            <GraficoSazonalidadeGastos 
+              dados={dadosSazonalidade}
             />
           )}
         </TabsContent>
