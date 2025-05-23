@@ -8,6 +8,20 @@ export interface DadosGraficoDTO {
     percentual: number; // Valor entre 0 e 100
 }
 
+export interface CartaoLimiteDTO {
+    nomeCartao: string;
+    limiteTotal: number;
+    limiteUsado: number;
+    limiteDisponivel: number;
+    percentualUtilizado: number;
+}
+
+export interface DashboardFinanceiroDTO {
+    saldoAtual: number;
+    taxaEconomiaMensal: number;
+    limitesCartoes: CartaoLimiteDTO[];
+}
+
 export interface GraficoReceitasDespesasDTO {
     mes: number;
     ano: number;
@@ -100,6 +114,20 @@ export const GraficosService = {
             return {
                 ano,
                 totaisMensais: []
+            };
+        }
+    },
+
+    buscarDashboardFinanceiro: async (mes: number, ano: number): Promise<DashboardFinanceiroDTO> => {
+        try {
+            const response = await api.get(`/graficos/dashboard-financeiro?mes=${mes}&ano=${ano}`);
+            return response.data;
+        } catch (error) {
+            console.error("Erro ao buscar dados do dashboard financeiro:", error);
+            return {
+                saldoAtual: 0,
+                taxaEconomiaMensal: 0,
+                limitesCartoes: []
             };
         }
     }

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
-import { TrendingUp, TrendingDown, Wallet, Calendar as CalendarIcon, PieChart, LineChart } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, Calendar as CalendarIcon, PieChart, LineChart, Activity } from "lucide-react";
 import { formatarMoeda } from "@/services/api";
 import { ReceitasService } from "@/services/receitas";
 import { DespesasService } from "@/services/despesas";
@@ -10,6 +10,7 @@ import { GraficosService } from "@/services/graficos";
 import { FinanceSummaryCard } from "@/components/dashboard/FinanceSummaryCard";
 import { GraficoReceitasDespesas } from "@/components/dashboard/GraficoReceitasDespesas";
 import { GraficoVariacaoMensalDespesas } from "@/components/dashboard/GraficoVariacaoMensalDespesas";
+import { GraficoSaudeFinanceira } from "@/components/dashboard/GraficoSaudeFinanceira";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -47,6 +48,11 @@ const Dashboard = () => {
     },
   });
 
+  const { data: dadosSaudeFinanceira, isLoading: isLoadingSaudeFinanceira } = useQuery({
+    queryKey: ["dashboard-financeiro", mes, ano],
+    queryFn: () => GraficosService.buscarDashboardFinanceiro(mes, ano),
+  });
+
   // Buscar totais acumulados
   const { data: totalReceitasAcumulado = 0 } = useQuery({
     queryKey: ["total-receitas"],
@@ -68,7 +74,7 @@ const Dashboard = () => {
   const saldo = totalReceitas - totalDespesas;
 
   // Se os dados estiverem carregando, você pode mostrar um indicador de carregamento
-  if (isLoadingReceitas || isLoadingDespesas || isLoadingGrafico || isLoadingVariacaoMensal) {
+  if (isLoadingReceitas || isLoadingDespesas || isLoadingGrafico || isLoadingVariacaoMensal || isLoadingSaudeFinanceira) {
     return <div className="container mx-auto py-6">Carregando dados...</div>;
   }
 
@@ -131,7 +137,19 @@ const Dashboard = () => {
       </div>
 
       <div className="mt-6">
-        <Accordion type="single" collapsible className="w-full">
+        <Accordion type="single" collapsible className="w-full" defaultValue="saude-financeira">
+          <AccordionItem value="saude-financeira">
+            <AccordionTrigger className="flex items-center gap-2">
+              <Activity className="h-4 w-4" />
+              <span>Saúde Financeira</span>
+            </AccordionTrigger>
+            <AccordionContent>
+              {dadosSaudeFinanceira && (
+                <GraficoSaudeFinanceira dados={dadosSaudeFinanceira} />
+              )}
+            </AccordionContent>
+          </AccordionItem>
+
           <AccordionItem value="categorias">
             <AccordionTrigger className="flex items-center gap-2">
               <PieChart className="h-4 w-4" />
