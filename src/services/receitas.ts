@@ -17,6 +17,16 @@ export interface ReceitaDTO {
   contaId?: number;
 }
 
+export interface FiltrosReceita {
+  descricao?: string;
+  mes?: number;
+  ano?: number;
+  pagina?: number;
+  tamanhoPagina?: number;
+  ordenacao?: string;
+  direcao?: 'ASC' | 'DESC';
+}
+
 export const ReceitasService = {
   listar: async (): Promise<ReceitaDTO[]> => {
     const response = await api.get("/receitas");
@@ -35,6 +45,20 @@ export const ReceitasService = {
 
   buscarPorDescricao: async (descricao: string): Promise<ReceitaDTO[]> => {
     const response = await api.get(`/receitas/buscar?descricao=${descricao}`);
+    return response.data;
+  },
+
+  buscarComFiltros: async (filtros: FiltrosReceita): Promise<{ content: ReceitaDTO[], totalElements: number }> => {
+    const params = new URLSearchParams();
+    if (filtros.descricao) params.append('descricao', filtros.descricao);
+    if (filtros.mes) params.append('mes', filtros.mes.toString());
+    if (filtros.ano) params.append('ano', filtros.ano.toString());
+    if (filtros.pagina !== undefined) params.append('pagina', filtros.pagina.toString());
+    if (filtros.tamanhoPagina) params.append('tamanhoPagina', filtros.tamanhoPagina.toString());
+    if (filtros.ordenacao) params.append('ordenacao', filtros.ordenacao);
+    if (filtros.direcao) params.append('direcao', filtros.direcao);
+
+    const response = await api.get(`/receitas/filtros?${params.toString()}`);
     return response.data;
   },
 

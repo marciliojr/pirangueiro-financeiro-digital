@@ -6,7 +6,7 @@ import { CategoriasService } from "@/services/categorias";
 import { ContasService } from "@/services/contas";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
-import { Plus, Search, Edit, Trash, PiggyBank, FileText, FileDown, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Search, Edit, Trash, PiggyBank, FileText, FileDown, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { formatarMoeda, formatarData } from "@/services/api";
@@ -15,8 +15,36 @@ import { ConfirmDialog } from "@/components/receitas/ConfirmDialog";
 import { cn } from "@/lib/utils";
 import jsPDF from "jspdf";
 import autoTable, { UserOptions } from "jspdf-autotable";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type SortField = 'descricao' | 'data' | 'categoria' | 'conta' | 'valor';
+
+const meses = [
+  { valor: "todos", label: "Todos" },
+  { valor: "1", label: "Janeiro" },
+  { valor: "2", label: "Fevereiro" },
+  { valor: "3", label: "Março" },
+  { valor: "4", label: "Abril" },
+  { valor: "5", label: "Maio" },
+  { valor: "6", label: "Junho" },
+  { valor: "7", label: "Julho" },
+  { valor: "8", label: "Agosto" },
+  { valor: "9", label: "Setembro" },
+  { valor: "10", label: "Outubro" },
+  { valor: "11", label: "Novembro" },
+  { valor: "12", label: "Dezembro" }
+];
+
+const gerarAnos = () => {
+  const anoAtual = new Date().getFullYear();
+  const anos = [{ valor: "todos", label: "Todos" }];
+  for (let i = anoAtual - 5; i <= anoAtual + 5; i++) {
+    anos.push({ valor: i.toString(), label: i.toString() });
+  }
+  return anos;
+};
+
+const anos = gerarAnos();
 
 const Receitas = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -24,15 +52,27 @@ const Receitas = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [currentReceita, setCurrentReceita] = useState<ReceitaDTO | null>(null);
   const [sortConfig, setSortConfig] = useState<{ field: SortField; direction: 'asc' | 'desc' } | null>(null);
+  const [mesSelecionado, setMesSelecionado] = useState<number | undefined>(undefined);
+  const [anoSelecionado, setAnoSelecionado] = useState<number | undefined>(undefined);
+  const [pagina, setPagina] = useState(0);
+  const tamanhoPagina = 20;
   const queryClient = useQueryClient();
 
   // Obter lista de receitas
-  const { data: receitas = [], isLoading } = useQuery({
-    queryKey: ["receitas", searchTerm],
-    queryFn: () => searchTerm 
-      ? ReceitasService.buscarPorDescricao(searchTerm)
-      : ReceitasService.listar(),
+  const { data: receitasData = { content: [], totalElements: 0 }, isLoading } = useQuery({
+    queryKey: ["receitas", searchTerm, mesSelecionado, anoSelecionado, pagina, sortConfig],
+    queryFn: () => ReceitasService.buscarComFiltros({
+      descricao: searchTerm,
+      mes: mesSelecionado,
+      ano: anoSelecionado,
+      pagina,
+      tamanhoPagina,
+      ordenacao: sortConfig?.field,
+      direcao: sortConfig?.direction?.toUpperCase() as 'ASC' | 'DESC'
+    }),
   });
+
+  const receitas = receitasData.content;
   
   // Obter categorias para exibir os nomes
   const { data: categorias = [] } = useQuery({
@@ -59,7 +99,20 @@ const Receitas = () => {
   // Manipuladores de eventos
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    setPagina(0);
     queryClient.invalidateQueries({ queryKey: ["receitas"] });
+  };
+
+  const handleMesChange = (value: string) => {
+    const mes = value === "todos" ? undefined : parseInt(value);
+    setMesSelecionado(mes);
+    setPagina(0);
+  };
+
+  const handleAnoChange = (value: string) => {
+    const ano = value === "todos" ? undefined : parseInt(value);
+    setAnoSelecionado(ano);
+    setPagina(0);
   };
 
   const openCreateForm = () => {
@@ -174,44 +227,6 @@ const Receitas = () => {
     toast.success("Extrato de receitas exportado com sucesso!");
   };
 
-  // Função para ordenar as receitas
-  const sortReceitas = (receitas: ReceitaDTO[]) => {
-    if (!sortConfig) return receitas;
-
-    return [...receitas].sort((a, b) => {
-      if (sortConfig.field === 'descricao') {
-        return sortConfig.direction === 'asc'
-          ? a.descricao.localeCompare(b.descricao)
-          : b.descricao.localeCompare(a.descricao);
-      }
-      if (sortConfig.field === 'data') {
-        return sortConfig.direction === 'asc'
-          ? new Date(a.data).getTime() - new Date(b.data).getTime()
-          : new Date(b.data).getTime() - new Date(a.data).getTime();
-      }
-      if (sortConfig.field === 'categoria') {
-        const catA = getCategoryName(a);
-        const catB = getCategoryName(b);
-        return sortConfig.direction === 'asc'
-          ? catA.localeCompare(catB)
-          : catB.localeCompare(catA);
-      }
-      if (sortConfig.field === 'conta') {
-        const contaA = getAccountName(a);
-        const contaB = getAccountName(b);
-        return sortConfig.direction === 'asc'
-          ? contaA.localeCompare(contaB)
-          : contaB.localeCompare(contaA);
-      }
-      if (sortConfig.field === 'valor') {
-        return sortConfig.direction === 'asc'
-          ? a.valor - b.valor
-          : b.valor - a.valor;
-      }
-      return 0;
-    });
-  };
-
   // Componente para o botão de ordenação
   const SortButton = ({ field, label, className }: { field: SortField; label: string; className?: string }) => {
     const isActive = sortConfig?.field === field;
@@ -226,6 +241,7 @@ const Receitas = () => {
           direction: direction === 'asc' ? 'desc' : 'asc'
         });
       }
+      setPagina(0);
     };
 
     return (
@@ -269,7 +285,7 @@ const Receitas = () => {
       />
 
       <div className="mb-6">
-        <form onSubmit={handleSearch} className="flex items-center space-x-2">
+        <div className="flex items-center gap-4">
           <div className="relative w-full max-w-sm">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
@@ -278,12 +294,43 @@ const Receitas = () => {
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
+                setPagina(0);
                 queryClient.invalidateQueries({ queryKey: ["receitas"] });
               }}
               className="pl-8"
             />
           </div>
-        </form>
+
+          <div className="w-48">
+            <Select value={mesSelecionado?.toString() || "todos"} onValueChange={handleMesChange}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o mês" />
+              </SelectTrigger>
+              <SelectContent>
+                {meses.map((mes) => (
+                  <SelectItem key={mes.valor} value={mes.valor}>
+                    {mes.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="w-48">
+            <Select value={anoSelecionado?.toString() || "todos"} onValueChange={handleAnoChange}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o ano" />
+              </SelectTrigger>
+              <SelectContent>
+                {anos.map((ano) => (
+                  <SelectItem key={ano.valor} value={ano.valor}>
+                    {ano.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
       </div>
 
       <div className="border rounded-lg">
@@ -291,19 +338,19 @@ const Receitas = () => {
           <TableHeader>
             <TableRow>
               <TableHead>
-                <SortButton field="descricao" label="Descrição" />
+                <SortButton field="descricao" label="Descrição" className="p-0 h-8 hover:bg-transparent flex items-center justify-between w-full" />
               </TableHead>
               <TableHead>
-                <SortButton field="data" label="Data" />
+                <SortButton field="data" label="Data" className="p-0 h-8 hover:bg-transparent flex items-center justify-between w-full" />
               </TableHead>
               <TableHead>
-                <SortButton field="categoria" label="Categoria" />
+                <SortButton field="categoria" label="Categoria" className="p-0 h-8 hover:bg-transparent flex items-center justify-between w-full" />
               </TableHead>
               <TableHead>
-                <SortButton field="conta" label="Conta" />
+                <SortButton field="conta" label="Conta" className="p-0 h-8 hover:bg-transparent flex items-center justify-between w-full" />
               </TableHead>
               <TableHead className="text-right">
-                <SortButton field="valor" label="Valor" className="justify-end" />
+                <SortButton field="valor" label="Valor" className="p-0 h-8 hover:bg-transparent flex items-center justify-between w-full justify-end" />
               </TableHead>
               <TableHead>Anexo</TableHead>
               <TableHead className="w-[100px]">Ações</TableHead>
@@ -323,7 +370,7 @@ const Receitas = () => {
                 </TableCell>
               </TableRow>
             ) : (
-              sortReceitas(receitas).map((receita) => (
+              receitas.map((receita) => (
                 <TableRow key={receita.id}>
                   <TableCell className="font-medium">{receita.descricao}</TableCell>
                   <TableCell>{formatarData(receita.data)}</TableCell>
@@ -346,12 +393,20 @@ const Receitas = () => {
                     )}
                   </TableCell>
                   <TableCell>
-                    <div className="flex space-x-2">
-                      <Button variant="ghost" size="icon" onClick={() => openEditForm(receita)}>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => openEditForm(receita)}
+                      >
                         <Edit className="h-4 w-4" />
                         <span className="sr-only">Editar</span>
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => openDeleteDialog(receita)}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => openDeleteDialog(receita)}
+                      >
                         <Trash className="h-4 w-4" />
                         <span className="sr-only">Excluir</span>
                       </Button>
@@ -362,6 +417,38 @@ const Receitas = () => {
             )}
           </TableBody>
         </Table>
+
+        {/* Paginação */}
+        {receitasData.totalElements > 0 && (
+          <div className="flex items-center justify-between px-4 py-4 border-t">
+            <div className="text-sm text-muted-foreground">
+              Mostrando {receitas.length} de {receitasData.totalElements} resultados
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPagina(p => Math.max(0, p - 1))}
+                disabled={pagina === 0}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                <span className="sr-only">Página anterior</span>
+              </Button>
+              <div className="text-sm font-medium">
+                Página {pagina + 1} de {Math.ceil(receitasData.totalElements / tamanhoPagina)}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPagina(p => p + 1)}
+                disabled={(pagina + 1) * tamanhoPagina >= receitasData.totalElements}
+              >
+                <ChevronRight className="h-4 w-4" />
+                <span className="sr-only">Próxima página</span>
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Modal de criação/edição de receita */}
