@@ -20,7 +20,7 @@ export function GraficoSaudeFinanceira({ dados }: GraficoSaudeFinanceiraProps) {
     return (
         <Card className="col-span-full">
             <CardHeader>
-                <CardTitle>Análise de Saúde Financeira dos Cartões</CardTitle>
+                <CardTitle>Análise de Saúde Financeira</CardTitle>
             </CardHeader>
             <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">

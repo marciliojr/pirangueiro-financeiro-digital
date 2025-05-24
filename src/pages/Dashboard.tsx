@@ -147,7 +147,7 @@ const Dashboard = () => {
         <TabsList className="w-full justify-start border-b mb-6">
           <TabsTrigger value="saude-financeira" className="flex items-center gap-2">
             <Activity className="h-4 w-4" />
-            <span>Saúde Cartões</span>
+            <span>Saúde Financeira</span>
           </TabsTrigger>
           <TabsTrigger value="despesas-cartao" className="flex items-center gap-2">
             <CreditCard className="h-4 w-4" />
