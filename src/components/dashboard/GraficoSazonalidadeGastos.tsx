@@ -1,94 +1,206 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { GraficoSazonalidadeGastosDTO } from "@/services/graficos";
-import { formatarMoeda } from "@/services/api";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
+import React from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Area, ComposedChart } from 'recharts';
+import { TrendingUp, TrendingDown, Calendar, DollarSign, BarChart3 } from 'lucide-react';
 
-interface GraficoSazonalidadeGastosProps {
-    dados: GraficoSazonalidadeGastosDTO;
-}
+export const GraficoSazonalidadeGastos = () => {
+  // Dados de exemplo baseados no seu backend
+  const data = [
+    { mes: 'JAN', valor: 2850.00, mesCompleto: 'Janeiro' },
+    { mes: 'FEV', valor: 2350.00, mesCompleto: 'Fevereiro' },
+    { mes: 'MAR', valor: 3200.00, mesCompleto: 'Março' },
+    { mes: 'ABR', valor: 2750.00, mesCompleto: 'Abril' },
+    { mes: 'MAI', valor: 2950.00, mesCompleto: 'Maio' },
+    { mes: 'JUN', valor: 2650.00, mesCompleto: 'Junho' },
+    { mes: 'JUL', valor: 3100.00, mesCompleto: 'Julho' },
+    { mes: 'AGO', valor: 2800.00, mesCompleto: 'Agosto' },
+    { mes: 'SET', valor: 2600.00, mesCompleto: 'Setembro' },
+    { mes: 'OUT', valor: 2900.00, mesCompleto: 'Outubro' },
+    { mes: 'NOV', valor: 3350.00, mesCompleto: 'Novembro' },
+    { mes: 'DEZ', valor: 3800.00, mesCompleto: 'Dezembro' }
+  ];
 
-export function GraficoSazonalidadeGastos({ dados }: GraficoSazonalidadeGastosProps) {
-    // Preparar dados para o gráfico
-    const dadosGrafico = dados.meses.map((mes, index) => ({
-        mes: mes,
-        media: dados.mediasGastos[index]
-    }));
+  // Calculando estatísticas
+  const valores = data.map(d => d.valor);
+  const maiorValor = Math.max(...valores);
+  const menorValor = Math.min(...valores);
+  const mediaGeral = valores.reduce((a, b) => a + b, 0) / valores.length;
+  
+  const mesMaiorGasto = data.find(d => d.valor === maiorValor);
+  const mesMenorGasto = data.find(d => d.valor === menorValor);
 
-    // Calcular a média geral para a linha de referência
-    const mediaGeral = dados.mediasGastos.reduce((acc, curr) => acc + curr, 0) / dados.mediasGastos.length;
+  // Identificando tendência (segunda metade vs primeira metade)
+  const primeiroSemestre = valores.slice(0, 6).reduce((a, b) => a + b, 0) / 6;
+  const segundoSemestre = valores.slice(6).reduce((a, b) => a + b, 0) / 6;
+  const tendencia = segundoSemestre > primeiroSemestre ? 'crescente' : 'decrescente';
 
-    return (
-        <Card className="col-span-full">
-            <CardHeader>
-                <CardTitle>Sazonalidade de Gastos</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <div className="h-[400px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <BarChart
-                            data={dadosGrafico}
-                            margin={{
-                                top: 20,
-                                right: 30,
-                                left: 20,
-                                bottom: 5,
-                            }}
-                        >
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis 
-                                dataKey="mes"
-                                tick={{ fontSize: 11 }}
-                            />
-                            <YAxis
-                                tick={{ fontSize: 11 }}
-                                tickFormatter={(value) => formatarMoeda(value)}
-                            />
-                            <Tooltip
-                                formatter={(value: number) => [formatarMoeda(value), "Média de Gastos"]}
-                                labelFormatter={(label) => `Mês: ${label}`}
-                            />
-                            <Bar
-                                dataKey="media"
-                                fill="#f43f5e"
-                                radius={[4, 4, 0, 0]}
-                            />
-                            <ReferenceLine
-                                y={mediaGeral}
-                                stroke="#6366f1"
-                                strokeDasharray="3 3"
-                                label={{ 
-                                    value: "Média Geral",
-                                    position: "right",
-                                    fill: "#6366f1",
-                                    fontSize: 12
-                                }}
-                            />
-                        </BarChart>
-                    </ResponsiveContainer>
-                </div>
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      const valor = payload[0].value;
+      const percentualDaMedia = ((valor / mediaGeral - 1) * 100).toFixed(1);
+      
+      return (
+        <div className="bg-white p-4 border border-gray-200 rounded-lg shadow-lg">
+          <p className="font-semibold text-gray-800">{data.mesCompleto}</p>
+          <p className="text-blue-600 font-bold">
+            R$ {valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+          </p>
+          <p className={`text-sm ${percentualDaMedia > 0 ? 'text-red-500' : 'text-green-500'}`}>
+            {percentualDaMedia > 0 ? '+' : ''}{percentualDaMedia}% da média
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
 
-                <div className="mt-6 grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <p className="text-sm font-medium text-muted-foreground">Maior Média de Gastos</p>
-                        <div className="flex items-center justify-between">
-                            <span className="text-sm">{dados.mesMaiorGasto}</span>
-                            <span className="text-sm font-medium text-rose-600">
-                                {formatarMoeda(dados.maiorMedia)}
-                            </span>
-                        </div>
-                    </div>
+  return (
+    <div className="w-full bg-white rounded-xl shadow-lg p-6">
+      {/* Header */}
+      <div className="mb-6">
+        <div className="flex items-center gap-2 mb-2">
+          <BarChart3 className="w-6 h-6 text-blue-600" />
+          <h2 className="text-2xl font-bold text-gray-800">Sazonalidade dos Gastos</h2>
+        </div>
+        <p className="text-gray-600">Média histórica de gastos por mês do ano</p>
+      </div>
 
-                    <div className="space-y-2">
-                        <p className="text-sm font-medium text-muted-foreground">Menor Média de Gastos</p>
-                        <div className="flex items-center justify-between">
-                            <span className="text-sm">{dados.mesMenorGasto}</span>
-                            <span className="text-sm font-medium text-emerald-600">
-                                {formatarMoeda(dados.menorMedia)}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
-    );
-} 
+      {/* Cards de estatísticas */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-lg border-l-4 border-blue-500">
+          <div className="flex items-center gap-2">
+            <DollarSign className="w-5 h-5 text-blue-600" />
+            <span className="text-sm font-medium text-blue-600">Média Anual</span>
+          </div>
+          <span className="text-xl font-bold text-gray-800">
+            R$ {mediaGeral.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+          </span>
+        </div>
+
+        <div className="bg-gradient-to-r from-red-50 to-red-100 p-4 rounded-lg border-l-4 border-red-500">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-red-600" />
+            <span className="text-sm font-medium text-red-600">Maior Gasto</span>
+          </div>
+          <span className="text-lg font-bold text-gray-800">{mesMaiorGasto?.mesCompleto}</span>
+          <span className="text-sm text-gray-600 block">
+            R$ {maiorValor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+          </span>
+        </div>
+
+        <div className="bg-gradient-to-r from-green-50 to-green-100 p-4 rounded-lg border-l-4 border-green-500">
+          <div className="flex items-center gap-2">
+            <TrendingDown className="w-5 h-5 text-green-600" />
+            <span className="text-sm font-medium text-green-600">Menor Gasto</span>
+          </div>
+          <span className="text-lg font-bold text-gray-800">{mesMenorGasto?.mesCompleto}</span>
+          <span className="text-sm text-gray-600 block">
+            R$ {menorValor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+          </span>
+        </div>
+
+        <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-lg border-l-4 border-purple-500">
+          <div className="flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-purple-600" />
+            <span className="text-sm font-medium text-purple-600">Tendência</span>
+          </div>
+          <span className="text-lg font-bold text-gray-800 capitalize">{tendencia}</span>
+          <span className="text-sm text-gray-600 block">2º vs 1º semestre</span>
+        </div>
+      </div>
+
+      {/* Gráfico */}
+      <div className="h-80 mb-6">
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <XAxis 
+              dataKey="mes" 
+              tick={{ fontSize: 12 }}
+              stroke="#666"
+            />
+            <YAxis 
+              tickFormatter={(value) => `R$ ${(value/1000).toFixed(1)}k`}
+              tick={{ fontSize: 12 }}
+              stroke="#666"
+            />
+            <Tooltip content={<CustomTooltip />} />
+            
+            {/* Linha da média */}
+            <ReferenceLine 
+              y={mediaGeral} 
+              stroke="#8b5cf6" 
+              strokeDasharray="8 8" 
+              strokeWidth={2}
+              label={{ value: "Média Anual", position: "topRight", fill: "#8b5cf6" }}
+            />
+            
+            {/* Área preenchida */}
+            <Area
+              type="monotone"
+              dataKey="valor"
+              stroke="none"
+              fill="url(#colorGradient)"
+              fillOpacity={0.1}
+            />
+            
+            {/* Linha principal */}
+            <Line
+              type="monotone"
+              dataKey="valor"
+              stroke="#3b82f6"
+              strokeWidth={3}
+              dot={{ fill: '#3b82f6', strokeWidth: 2, r: 6 }}
+              activeDot={{ r: 8, fill: '#1d4ed8' }}
+            />
+            
+            <defs>
+              <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+              </linearGradient>
+            </defs>
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Insights */}
+      <div className="bg-gray-50 rounded-lg p-4">
+        <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+          <Calendar className="w-5 h-5" />
+          Insights Sazonais
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+          <div>
+            <span className="font-medium text-gray-700">• Pico de gastos:</span>
+            <span className="text-gray-600 ml-1">
+              {data.filter(d => d.valor > mediaGeral * 1.1).map(d => d.mesCompleto).join(', ') || 'Nenhum'}
+            </span>
+          </div>
+          <div>
+            <span className="font-medium text-gray-700">• Economia maior:</span>
+            <span className="text-gray-600 ml-1">
+              {data.filter(d => d.valor < mediaGeral * 0.9).map(d => d.mesCompleto).join(', ') || 'Nenhum'}
+            </span>
+          </div>
+          <div>
+            <span className="font-medium text-gray-700">• Variação:</span>
+            <span className="text-gray-600 ml-1">
+              R$ {(maiorValor - menorValor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} 
+              ({(((maiorValor - menorValor) / mediaGeral) * 100).toFixed(1)}%)
+            </span>
+          </div>
+          <div>
+            <span className="font-medium text-gray-700">• Estabilidade:</span>
+            <span className="text-gray-600 ml-1">
+              {((maiorValor - menorValor) / mediaGeral) < 0.3 ? 'Alta' : 
+               ((maiorValor - menorValor) / mediaGeral) < 0.6 ? 'Média' : 'Baixa'}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default GraficoSazonalidadeGastos;
