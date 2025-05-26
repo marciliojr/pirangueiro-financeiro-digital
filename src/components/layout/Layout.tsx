@@ -12,7 +12,7 @@ export const Layout = ({ children }: LayoutProps) => {
       <Sidebar />
       <main className="flex flex-1 flex-col overflow-auto">
         <Header />
-        <div className="container mx-auto h-full p-4 md:p-6">
+        <div className="container mx-auto h-full px-2 py-2 sm:px-4 md:p-6 max-w-[1600px]">
           {children}
         </div>
       </main>

@@ -1,232 +1,283 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DadosGraficoDTO } from "@/services/graficos";
 import { formatarMoeda } from "@/services/api";
-import { PieChart, Pie, Cell, Sector, ResponsiveContainer, Legend } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import { useState } from "react";
+import { TrendingUp, TrendingDown, DollarSign, PieChart as PieChartIcon } from "lucide-react";
 
 interface GraficoReceitasDespesasProps {
     receitas: DadosGraficoDTO[];
     despesas: DadosGraficoDTO[];
+    totalReceitas?: number;
+    totalDespesas?: number;
+    saldo?: number;
+    mes?: number;
+    ano?: number;
 }
 
 interface DadosGrafico {
     name: string;
     value: number;
-    cor: string;
-}
-
-interface ActiveShapeProps {
-    cx: number;
-    cy: number;
-    midAngle: number;
-    innerRadius: number;
-    outerRadius: number;
-    startAngle: number;
-    endAngle: number;
     fill: string;
-    payload: DadosGrafico;
-    percent: number;
-    value: number;
+    percentual?: number;
 }
 
-interface LegendPayload {
-    value: string;
-    id?: string;
-    type?: string;
-    color?: string;
-    payload?: {
-        name: string;
-        value: number;
-        cor: string;
-    };
-}
+// Paleta de cores moderna
+const CORES_RECEITAS = [
+    '#10B981', '#059669', '#047857', '#065F46', 
+    '#6EE7B7', '#34D399', '#A7F3D0', '#D1FAE5'
+];
 
-const renderActiveShape = (props: ActiveShapeProps) => {
+const CORES_DESPESAS = [
+    '#EF4444', '#DC2626', '#B91C1C', '#991B1B',
+    '#F87171', '#FCA5A5', '#FECACA', '#FEE2E2'
+];
+
+const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+        const data = payload[0];
+        return (
+            <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
+                <p className="font-medium text-gray-900">{data.name}</p>
+                <p className="text-sm text-gray-600">
+                    Valor: <span className="font-semibold">{formatarMoeda(data.value)}</span>
+                </p>
+                {data.payload.percentual && (
+                    <p className="text-sm text-gray-600">
+                        Percentual: <span className="font-semibold">{data.payload.percentual.toFixed(1)}%</span>
+                    </p>
+                )}
+            </div>
+        );
+    }
+    return null;
+};
+
+const CustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
+    if (percent < 0.05) return null; // Não mostra label para fatias muito pequenas
+    
     const RADIAN = Math.PI / 180;
-    const {
-        cx, cy, midAngle, innerRadius, outerRadius, startAngle, endAngle,
-        fill, payload, percent, value
-    } = props;
-    const sin = Math.sin(-RADIAN * midAngle);
-    const cos = Math.cos(-RADIAN * midAngle);
-    const sx = cx + (outerRadius + 10) * cos;
-    const sy = cy + (outerRadius + 10) * sin;
-    const mx = cx + (outerRadius + 25) * cos;
-    const my = cy + (outerRadius + 25) * sin;
-    const ex = mx + (cos >= 0 ? 1 : -1) * 18;
-    const ey = my;
-    const textAnchor = cos >= 0 ? 'start' : 'end';
+    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
     return (
-        <g>
-            <text x={cx} y={cy} dy={8} textAnchor="middle" fill={fill} fontSize="11">
-                {payload.name}
-            </text>
-            <Sector
-                cx={cx}
-                cy={cy}
-                innerRadius={innerRadius}
-                outerRadius={outerRadius}
-                startAngle={startAngle}
-                endAngle={endAngle}
-                fill={fill}
-            />
-            <Sector
-                cx={cx}
-                cy={cy}
-                startAngle={startAngle}
-                endAngle={endAngle}
-                innerRadius={outerRadius + 6}
-                outerRadius={outerRadius + 10}
-                fill={fill}
-            />
-            <path
-                d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`}
-                stroke={fill}
-                fill="none"
-            />
-            <circle cx={ex} cy={ey} r={2} fill={fill} stroke="none" />
-            <text
-                x={ex + (cos >= 0 ? 1 : -1) * 12}
-                y={ey}
-                textAnchor={textAnchor}
-                fill="#333"
-                fontSize="11"
-            >{`${payload.name}`}</text>
-            <text
-                x={ex + (cos >= 0 ? 1 : -1) * 12}
-                y={ey}
-                dy={16}
-                textAnchor={textAnchor}
-                fill="#999"
-                fontSize="11"
-            >
-                {`${formatarMoeda(value)} (${(percent * 100).toFixed(2)}%)`}
-            </text>
-        </g>
+        <text 
+            x={x} 
+            y={y} 
+            fill="white" 
+            textAnchor={x > cx ? 'start' : 'end'} 
+            dominantBaseline="central"
+            fontSize="11"
+            fontWeight="600"
+        >
+            {`${(percent * 100).toFixed(0)}%`}
+        </text>
     );
 };
 
-export function GraficoReceitasDespesas({ receitas, despesas }: GraficoReceitasDespesasProps) {
-    const [activeIndexReceitas, setActiveIndexReceitas] = useState<number | undefined>();
-    const [activeIndexDespesas, setActiveIndexDespesas] = useState<number | undefined>();
+const StatCard = ({ 
+    title, 
+    value, 
+    icon: Icon, 
+    color, 
+    bgColor 
+}: { 
+    title: string; 
+    value: number; 
+    icon: any; 
+    color: string; 
+    bgColor: string; 
+}) => (
+    <div className={`${bgColor} p-4 rounded-xl border`}>
+        <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-lg ${color === 'text-green-600' ? 'bg-green-100' : color === 'text-red-600' ? 'bg-red-100' : 'bg-blue-100'}`}>
+                <Icon className={`h-5 w-5 ${color}`} />
+            </div>
+            <div>
+                <p className="text-sm font-medium text-gray-600">{title}</p>
+                <p className={`text-lg font-bold ${color}`}>
+                    {formatarMoeda(value)}
+                </p>
+            </div>
+        </div>
+    </div>
+);
+
+export function GraficoReceitasDespesas({ 
+    receitas, 
+    despesas, 
+    totalReceitas = 0,
+    totalDespesas = 0,
+    saldo = 0,
+    mes,
+    ano 
+}: GraficoReceitasDespesasProps) {
+    const [hoveredReceita, setHoveredReceita] = useState<string | null>(null);
+    const [hoveredDespesa, setHoveredDespesa] = useState<string | null>(null);
 
     // Verificar se há dados para exibir
     const temDados = receitas.length > 0 || despesas.length > 0;
 
-    // Preparar dados para os gráficos e ordenar por valor
-    const dadosReceitas = receitas
-        .map(r => ({
+    // Preparar dados para os gráficos com cores automáticas
+    const dadosReceitas: DadosGrafico[] = receitas
+        .map((r, index) => ({
             name: r.categoria,
             value: r.valor,
-            fill: r.cor
+            fill: r.cor || CORES_RECEITAS[index % CORES_RECEITAS.length],
+            percentual: r.percentual
         }))
         .sort((a, b) => b.value - a.value);
 
-    const dadosDespesas = despesas
-        .map(d => ({
+    const dadosDespesas: DadosGrafico[] = despesas
+        .map((d, index) => ({
             name: d.categoria,
             value: d.valor,
-            fill: d.cor
+            fill: d.cor || CORES_DESPESAS[index % CORES_DESPESAS.length],
+            percentual: d.percentual
         }))
         .sort((a, b) => b.value - a.value);
 
-    const onPieEnterReceitas = (_: unknown, index: number) => {
-        setActiveIndexReceitas(index);
-    };
-
-    const onPieEnterDespesas = (_: unknown, index: number) => {
-        setActiveIndexDespesas(index);
-    };
+    const meses = [
+        'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+    ];
 
     return (
-        <Card className="col-span-full">
-            <CardHeader>
-                <CardTitle>Receitas e Despesas por Categoria</CardTitle>
-            </CardHeader>
-            <CardContent>
-                {!temDados ? (
-                    <div className="h-[400px] w-full flex items-center justify-center text-muted-foreground">
-                        Nenhum dado disponível para o período selecionado
-                    </div>
-                ) : (
-                    <div className="h-[500px] w-full grid grid-cols-2 gap-4">
-                        {/* Gráfico de Receitas */}
-                        <div className="h-full flex flex-col">
-                            <p className="text-center font-medium text-green-600 mb-4">Receitas</p>
-                            <div className="flex-1">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <PieChart>
-                                        <Pie
-                                            activeIndex={activeIndexReceitas}
-                                            activeShape={renderActiveShape}
-                                            data={dadosReceitas}
-                                            dataKey="value"
-                                            nameKey="name"
-                                            cx="50%"
-                                            cy="45%"
-                                            innerRadius={60}
-                                            outerRadius={80}
-                                            onMouseEnter={onPieEnterReceitas}
-                                        >
-                                            {dadosReceitas.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={entry.fill} />
-                                            ))}
-                                        </Pie>
-                                        <Legend
-                                            layout="horizontal"
-                                            align="left"
-                                            verticalAlign="bottom"
-                                            wrapperStyle={{
-                                                paddingTop: '20px',
-                                                width: '100%',
-                                                fontSize: '11px'
-                                            }}
-                                        />
-                                    </PieChart>
-                                </ResponsiveContainer>
+        <div className="space-y-6">
+            {/* Header com informações do período */}
+            <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-100">
+                <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-blue-100 rounded-lg">
+                                <PieChartIcon className="h-6 w-6 text-blue-600" />
+                            </div>
+                            <div>
+                                <CardTitle className="text-xl text-gray-900">
+                                    Distribuição por Categoria
+                                </CardTitle>
+                                {mes && ano && (
+                                    <p className="text-sm text-gray-600 mt-1">
+                                        {meses[mes - 1]} de {ano}
+                                    </p>
+                                )}
                             </div>
                         </div>
+                    </div>
+                </CardHeader>
+            </Card>
 
-                        {/* Gráfico de Despesas */}
-                        <div className="h-full flex flex-col">
-                            <p className="text-center font-medium text-red-600 mb-4">Despesas</p>
-                            <div className="flex-1">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <PieChart>
-                                        <Pie
-                                            activeIndex={activeIndexDespesas}
-                                            activeShape={renderActiveShape}
-                                            data={dadosDespesas}
-                                            dataKey="value"
-                                            nameKey="name"
-                                            cx="50%"
-                                            cy="45%"
-                                            innerRadius={60}
-                                            outerRadius={80}
-                                            onMouseEnter={onPieEnterDespesas}
-                                        >
-                                            {dadosDespesas.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={entry.fill} />
-                                            ))}
-                                        </Pie>
-                                        <Legend
-                                            layout="horizontal"
-                                            align="left"
-                                            verticalAlign="bottom"
-                                            wrapperStyle={{
-                                                paddingTop: '20px',
-                                                width: '100%',
-                                                fontSize: '11px'
-                                            }}
-                                        />
-                                    </PieChart>
-                                </ResponsiveContainer>
-                            </div>
+
+
+            {/* Gráficos */}
+            <Card className="shadow-lg">
+                <CardContent className="p-6">
+                    {!temDados ? (
+                        <div className="h-[400px] w-full flex flex-col items-center justify-center text-gray-500">
+                            <PieChartIcon className="h-16 w-16 text-gray-300 mb-4" />
+                            <p className="text-lg font-medium">Nenhum dado disponível</p>
+                            <p className="text-sm">para o período selecionado</p>
                         </div>
-                    </div>
-                )}
-            </CardContent>
-        </Card>
+                    ) : (
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            {/* Gráfico de Receitas */}
+                            {dadosReceitas.length > 0 && (
+                                <div className="space-y-4">
+                                    <div className="h-[400px]">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <PieChart>
+                                                <Pie
+                                                    data={dadosReceitas}
+                                                    dataKey="value"
+                                                    nameKey="name"
+                                                    cx="50%"
+                                                    cy="50%"
+                                                    outerRadius={100}
+                                                    innerRadius={40}
+                                                    paddingAngle={2}
+                                                    labelLine={false}
+                                                    label={CustomLabel}
+                                                    onMouseEnter={(_, index) => 
+                                                        setHoveredReceita(dadosReceitas[index]?.name || null)
+                                                    }
+                                                    onMouseLeave={() => setHoveredReceita(null)}
+                                                >
+                                                    {dadosReceitas.map((entry, index) => (
+                                                        <Cell 
+                                                            key={`receita-${index}`} 
+                                                            fill={entry.fill}
+                                                            stroke={hoveredReceita === entry.name ? "#fff" : "none"}
+                                                            strokeWidth={hoveredReceita === entry.name ? 2 : 0}
+                                                            style={{
+                                                                filter: hoveredReceita === entry.name ? 'brightness(1.1)' : 'none',
+                                                                transition: 'all 0.2s ease'
+                                                            }}
+                                                        />
+                                                    ))}
+                                                </Pie>
+                                                <Tooltip content={<CustomTooltip />} />
+                                                <Legend 
+                                                    verticalAlign="bottom" 
+                                                    height={36}
+                                                    wrapperStyle={{ fontSize: '12px' }}
+                                                />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Gráfico de Despesas */}
+                            {dadosDespesas.length > 0 && (
+                                <div className="space-y-4">
+                                    <div className="h-[400px]">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <PieChart>
+                                                <Pie
+                                                    data={dadosDespesas}
+                                                    dataKey="value"
+                                                    nameKey="name"
+                                                    cx="50%"
+                                                    cy="50%"
+                                                    outerRadius={100}
+                                                    innerRadius={40}
+                                                    paddingAngle={2}
+                                                    labelLine={false}
+                                                    label={CustomLabel}
+                                                    onMouseEnter={(_, index) => 
+                                                        setHoveredDespesa(dadosDespesas[index]?.name || null)
+                                                    }
+                                                    onMouseLeave={() => setHoveredDespesa(null)}
+                                                >
+                                                    {dadosDespesas.map((entry, index) => (
+                                                        <Cell 
+                                                            key={`despesa-${index}`} 
+                                                            fill={entry.fill}
+                                                            stroke={hoveredDespesa === entry.name ? "#fff" : "none"}
+                                                            strokeWidth={hoveredDespesa === entry.name ? 2 : 0}
+                                                            style={{
+                                                                filter: hoveredDespesa === entry.name ? 'brightness(1.1)' : 'none',
+                                                                transition: 'all 0.2s ease'
+                                                            }}
+                                                        />
+                                                    ))}
+                                                </Pie>
+                                                <Tooltip content={<CustomTooltip />} />
+                                                <Legend 
+                                                    verticalAlign="bottom" 
+                                                    height={36}
+                                                    wrapperStyle={{ fontSize: '12px' }}
+                                                />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+        </div>
     );
-} 
+}

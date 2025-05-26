@@ -9,7 +9,7 @@ import { DespesasService } from "@/services/despesas";
 import { GraficosService } from "@/services/graficos";
 import { FinanceSummaryCard } from "@/components/dashboard/FinanceSummaryCard";
 import { GraficoReceitasDespesas } from "@/components/dashboard/GraficoReceitasDespesas";
-import { GraficoSaudeFinanceira } from "@/components/dashboard/GraficoSaudeFinanceira";
+import GraficoSaudeFinanceira from "@/components/dashboard/GraficoSaudeFinanceira";
 import { GraficoDespesasCartao } from "@/components/dashboard/GraficoDespesasCartao";
 import { GraficoSazonalidadeGastos } from "@/components/dashboard/GraficoSazonalidadeGastos";
 import { GraficoTendenciaGastos } from "@/components/dashboard/GraficoTendenciaGastos";
@@ -88,8 +88,8 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="container mx-auto py-6">
-      <div className="flex justify-between items-center mb-6">
+    <div className="container mx-auto py-2 sm:py-4 md:py-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 sm:mb-6">
         <PageHeader 
           title="Dashboard" 
           description="Visão geral das suas finanças" 
@@ -97,7 +97,7 @@ const Dashboard = () => {
         
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="outline" className="w-[240px] justify-start text-left font-normal">
+            <Button variant="outline" className="w-full sm:w-[240px] justify-start text-left font-normal">
               <CalendarIcon className="mr-2 h-4 w-4" />
               {format(date, "MMMM 'de' yyyy", { locale: ptBR })}
             </Button>
@@ -114,7 +114,7 @@ const Dashboard = () => {
         </Popover>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3 mb-6">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 mb-6">
         <FinanceSummaryCard 
           title="Receitas" 
           value={totalReceitas}
@@ -144,28 +144,30 @@ const Dashboard = () => {
       </div>
 
       <Tabs defaultValue="saude-financeira" className="w-full">
-        <TabsList className="w-full justify-start border-b mb-6">
-          <TabsTrigger value="saude-financeira" className="flex items-center gap-2">
-            <Activity className="h-4 w-4" />
-            <span>Saúde Financeira</span>
-          </TabsTrigger>
-          <TabsTrigger value="despesas-cartao" className="flex items-center gap-2">
-            <CreditCard className="h-4 w-4" />
-            <span>Despesas por Cartão</span>
-          </TabsTrigger>
-          <TabsTrigger value="tendencia-gastos" className="flex items-center gap-2">
-            <TrendingUp className="h-4 w-4" />
-            <span>Tendência de Gastos</span>
-          </TabsTrigger>
-          <TabsTrigger value="categorias" className="flex items-center gap-2">
-            <PieChart className="h-4 w-4" />
-            <span>Categorias</span>
-          </TabsTrigger>
-          <TabsTrigger value="sazonalidade" className="flex items-center gap-2">
-            <TrendingUpIcon className="h-4 w-4" />
-            <span>Sazonalidade</span>
-          </TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto pb-2">
+          <TabsList className="w-full justify-start border-b mb-6 flex-nowrap">
+            <TabsTrigger value="saude-financeira" className="flex items-center gap-2 whitespace-nowrap">
+              <Activity className="h-4 w-4" />
+              <span>Saúde Financeira</span>
+            </TabsTrigger>
+            <TabsTrigger value="despesas-cartao" className="flex items-center gap-2 whitespace-nowrap">
+              <CreditCard className="h-4 w-4" />
+              <span>Despesas por Cartão</span>
+            </TabsTrigger>
+            <TabsTrigger value="tendencia-gastos" className="flex items-center gap-2 whitespace-nowrap">
+              <TrendingUp className="h-4 w-4" />
+              <span>Tendência de Gastos</span>
+            </TabsTrigger>
+            <TabsTrigger value="categorias" className="flex items-center gap-2 whitespace-nowrap">
+              <PieChart className="h-4 w-4" />
+              <span>Categorias</span>
+            </TabsTrigger>
+            <TabsTrigger value="sazonalidade" className="flex items-center gap-2 whitespace-nowrap">
+              <TrendingUpIcon className="h-4 w-4" />
+              <span>Sazonalidade</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="saude-financeira">
           {dadosSaudeFinanceira && (
