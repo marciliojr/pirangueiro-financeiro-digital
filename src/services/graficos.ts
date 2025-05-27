@@ -51,6 +51,12 @@ export interface GraficoSazonalidadeGastosDTO {
     mesMenorGasto: string;
 }
 
+export interface DadosSazonalidadeDTO {
+    mes: string;
+    mesCompleto: string;
+    valor: number;
+}
+
 export interface GraficoTendenciaGastosDTO {
     meses: string[];
     valores: number[];
@@ -151,20 +157,40 @@ export const GraficosService = {
         }
     },
 
-    buscarSazonalidadeGastos: async (): Promise<GraficoSazonalidadeGastosDTO> => {
+    buscarSazonalidadeGastos: async (): Promise<DadosSazonalidadeDTO[]> => {
         try {
             const response = await api.get('/graficos/sazonalidade-gastos');
-            return response.data;
+            
+            // Se não houver dados, retornar array vazio
+            if (!response.data || !response.data.meses || response.data.meses.length === 0) {
+                return [];
+            }
+
+            // Mapeamento de meses completos para abreviados
+            const mesesParaAbreviado: { [key: string]: string } = {
+                'JANEIRO': 'Jan',
+                'FEVEREIRO': 'Fev',
+                'MARÇO': 'Mar',
+                'ABRIL': 'Abr',
+                'MAIO': 'Mai',
+                'JUNHO': 'Jun',
+                'JULHO': 'Jul',
+                'AGOSTO': 'Ago',
+                'SETEMBRO': 'Set',
+                'OUTUBRO': 'Out',
+                'NOVEMBRO': 'Nov',
+                'DEZEMBRO': 'Dez'
+            };
+
+            // Transformar os dados da API no formato esperado pelo componente
+            return response.data.meses.map((mes: string, index: number) => ({
+                mes: mesesParaAbreviado[mes] || mes.substring(0, 3),
+                mesCompleto: mes.charAt(0).toUpperCase() + mes.slice(1).toLowerCase(),
+                valor: response.data.mediasGastos[index] || 0
+            }));
         } catch (error) {
             console.error("Erro ao buscar sazonalidade de gastos:", error);
-            return {
-                meses: [],
-                mediasGastos: [],
-                maiorMedia: 0,
-                menorMedia: 0,
-                mesMaiorGasto: "",
-                mesMenorGasto: ""
-            };
+            return [];
         }
     },
 

@@ -202,7 +202,7 @@ const Dashboard = () => {
         <TabsContent value="sazonalidade">
           {dadosSazonalidade && (
             <GraficoSazonalidadeGastos 
-              dados={dadosSazonalidade}
+              data={dadosSazonalidade}
             />
           )}
         </TabsContent>

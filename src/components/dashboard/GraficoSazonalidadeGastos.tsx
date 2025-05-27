@@ -1,6 +1,15 @@
 import React from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Area, ComposedChart } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { TrendingUp, TrendingDown, Calendar, DollarSign, BarChart3 } from 'lucide-react';
+
+interface TooltipPayload {
+  payload: {
+    mes: string;
+    mesCompleto: string;
+    valor: number;
+  };
+  value: number;
+}
 
 export const GraficoSazonalidadeGastos = ({ data = [] }) => {
   // Verifica se há dados
@@ -19,33 +28,34 @@ export const GraficoSazonalidadeGastos = ({ data = [] }) => {
   }
 
   // Calculando estatísticas
-  const valores = data.map(d => d.valor);
+  const valores = data.map(d => Number(d.valor) || 0);
   const maiorValor = Math.max(...valores);
   const menorValor = Math.min(...valores);
   const mediaGeral = valores.reduce((a, b) => a + b, 0) / valores.length;
   
-  const mesMaiorGasto = data.find(d => d.valor === maiorValor);
-  const mesMenorGasto = data.find(d => d.valor === menorValor);
+  const mesMaiorGasto = data.find(d => Number(d.valor) === maiorValor);
+  const mesMenorGasto = data.find(d => Number(d.valor) === menorValor);
 
   // Identificando tendência (segunda metade vs primeira metade)
-  const primeiroSemestre = valores.slice(0, 6).reduce((a, b) => a + b, 0) / 6;
-  const segundoSemestre = valores.slice(6).reduce((a, b) => a + b, 0) / 6;
+  const primeiroSemestre = valores.length >= 6 ? valores.slice(0, 6).reduce((a, b) => a + b, 0) / 6 : 0;
+  const segundoSemestre = valores.length >= 12 ? valores.slice(6, 12).reduce((a, b) => a + b, 0) / 6 : 
+                          valores.length > 6 ? valores.slice(6).reduce((a, b) => a + b, 0) / (valores.length - 6) : 0;
   const tendencia = segundoSemestre > primeiroSemestre ? 'crescente' : 'decrescente';
 
-  const CustomTooltip = ({ active, payload, label }) => {
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: TooltipPayload[]; label?: string }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       const valor = payload[0].value;
-      const percentualDaMedia = ((valor / mediaGeral - 1) * 100).toFixed(1);
+      const percentualDaMedia = ((Number(valor) / mediaGeral - 1) * 100).toFixed(1);
       
       return (
         <div className="bg-white p-4 border border-gray-200 rounded-lg shadow-lg">
           <p className="font-semibold text-gray-800">{data.mesCompleto}</p>
           <p className="text-blue-600 font-bold">
-            R$ {valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            R$ {Number(valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </p>
-          <p className={`text-sm ${percentualDaMedia > 0 ? 'text-red-500' : 'text-green-500'}`}>
-            {percentualDaMedia > 0 ? '+' : ''}{percentualDaMedia}% da média
+          <p className={`text-sm ${Number(percentualDaMedia) > 0 ? 'text-red-500' : 'text-green-500'}`}>
+            {Number(percentualDaMedia) > 0 ? '+' : ''}{percentualDaMedia}% da média
           </p>
         </div>
       );
@@ -105,7 +115,9 @@ export const GraficoSazonalidadeGastos = ({ data = [] }) => {
           </div>
           <span className="text-base sm:text-lg font-bold text-gray-800 capitalize">{tendencia}</span>
           <span className="text-xs sm:text-sm text-gray-600 block">
-            {((segundoSemestre - primeiroSemestre) / primeiroSemestre * 100).toFixed(1)}% de variação
+            {primeiroSemestre > 0 
+              ? ((segundoSemestre - primeiroSemestre) / primeiroSemestre * 100).toFixed(1) 
+              : '0.0'}% de variação
           </span>
         </div>
       </div>
@@ -113,7 +125,7 @@ export const GraficoSazonalidadeGastos = ({ data = [] }) => {
       {/* Gráfico */}
       <div className="h-[300px] sm:h-[350px] md:h-[400px] mb-6">
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={data} margin={{ top: 20, right: 10, left: 10, bottom: 5 }}>
+          <LineChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
             <XAxis 
               dataKey="mes" 
@@ -137,32 +149,16 @@ export const GraficoSazonalidadeGastos = ({ data = [] }) => {
               label={{ value: "Média Anual", position: "right", fill: "#8b5cf6", fontSize: 11 }}
             />
             
-            {/* Área preenchida */}
-            <Area
-              type="monotone"
-              dataKey="valor"
-              stroke="none"
-              fill="url(#colorGradient)"
-              fillOpacity={0.1}
-            />
-            
             {/* Linha principal */}
             <Line
               type="monotone"
               dataKey="valor"
               stroke="#3b82f6"
-              strokeWidth={2}
-              dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
-              activeDot={{ r: 6, fill: '#1d4ed8' }}
+              strokeWidth={3}
+              dot={{ fill: '#3b82f6', strokeWidth: 2, r: 5 }}
+              activeDot={{ r: 7, fill: '#1d4ed8' }}
             />
-            
-            <defs>
-              <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-              </linearGradient>
-            </defs>
-          </ComposedChart>
+          </LineChart>
         </ResponsiveContainer>
       </div>
 
@@ -176,13 +172,13 @@ export const GraficoSazonalidadeGastos = ({ data = [] }) => {
           <div>
             <span className="font-medium text-gray-700">• Pico de gastos:</span>
             <span className="text-gray-600 ml-1">
-              {data.filter(d => d.valor > mediaGeral * 1.1).map(d => d.mesCompleto).join(', ') || 'Nenhum'}
+              {data.filter(d => Number(d.valor) > mediaGeral * 1.1).map(d => d.mesCompleto).join(', ') || 'Nenhum'}
             </span>
           </div>
           <div>
             <span className="font-medium text-gray-700">• Economia maior:</span>
             <span className="text-gray-600 ml-1">
-              {data.filter(d => d.valor < mediaGeral * 0.9).map(d => d.mesCompleto).join(', ') || 'Nenhum'}
+              {data.filter(d => Number(d.valor) < mediaGeral * 0.9).map(d => d.mesCompleto).join(', ') || 'Nenhum'}
             </span>
           </div>
           <div>
