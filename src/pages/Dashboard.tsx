@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
-import { TrendingUp, TrendingDown, Wallet, Calendar as CalendarIcon, PieChart, Activity, CreditCard, TrendingUpIcon } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, PieChart, Activity, CreditCard, TrendingUpIcon } from "lucide-react";
 import { formatarMoeda } from "@/services/api";
 import { ReceitasService } from "@/services/receitas";
 import { DespesasService } from "@/services/despesas";
@@ -14,19 +14,37 @@ import { GraficoDespesasCartao } from "@/components/dashboard/GraficoDespesasCar
 import { GraficoSazonalidadeGastos } from "@/components/dashboard/GraficoSazonalidadeGastos";
 import { GraficoTendenciaGastos } from "@/components/dashboard/GraficoTendenciaGastos";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
 const Dashboard = () => {
-  const [date, setDate] = useState<Date>(new Date());
+  const anoAtual = new Date().getFullYear();
+  const mesAtual = new Date().getMonth() + 1;
+  
+  const [mes, setMes] = useState<number>(mesAtual);
+  const [ano, setAno] = useState<number>(anoAtual);
   const [mesesAtrasCartao, setMesesAtrasCartao] = useState<number>(12);
   const [tabAtiva, setTabAtiva] = useState<string>("saude-financeira");
-  const mes = date.getMonth() + 1;
-  const ano = date.getFullYear();
+
+  // Lista de meses
+  const meses = [
+    { valor: 1, nome: "Janeiro" },
+    { valor: 2, nome: "Fevereiro" },
+    { valor: 3, nome: "Março" },
+    { valor: 4, nome: "Abril" },
+    { valor: 5, nome: "Maio" },
+    { valor: 6, nome: "Junho" },
+    { valor: 7, nome: "Julho" },
+    { valor: 8, nome: "Agosto" },
+    { valor: 9, nome: "Setembro" },
+    { valor: 10, nome: "Outubro" },
+    { valor: 11, nome: "Novembro" },
+    { valor: 12, nome: "Dezembro" },
+  ];
+
+  // Lista de anos (5 anos para trás e 5 para frente)
+  const anos = Array.from({ length: 11 }, (_, i) => anoAtual - 5 + i);
 
   const { data: receitas = [], isLoading: isLoadingReceitas } = useQuery({
     queryKey: ["receitas", mes, ano],
@@ -96,23 +114,32 @@ const Dashboard = () => {
           description="Visão geral das suas finanças" 
         />
         
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline" className="w-full sm:w-[240px] justify-start text-left font-normal">
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {format(date, "MMMM 'de' yyyy", { locale: ptBR })}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="end">
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={(newDate) => newDate && setDate(newDate)}
-              locale={ptBR}
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+          <Select value={mes.toString()} onValueChange={(value) => setMes(Number(value))}>
+            <SelectTrigger className="w-full sm:w-[140px]">
+              <SelectValue placeholder="Mês" />
+            </SelectTrigger>
+            <SelectContent>
+              {meses.map((mes) => (
+                <SelectItem key={mes.valor} value={mes.valor.toString()}>
+                  {mes.nome}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={ano.toString()} onValueChange={(value) => setAno(Number(value))}>
+            <SelectTrigger className="w-full sm:w-[100px]">
+              <SelectValue placeholder="Ano" />
+            </SelectTrigger>
+            <SelectContent>
+              {anos.map((ano) => (
+                <SelectItem key={ano} value={ano.toString()}>
+                  {ano}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 mb-6">
