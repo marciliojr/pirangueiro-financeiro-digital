@@ -2,22 +2,21 @@ import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Area, ComposedChart } from 'recharts';
 import { TrendingUp, TrendingDown, Calendar, DollarSign, BarChart3 } from 'lucide-react';
 
-export const GraficoSazonalidadeGastos = () => {
-  // Dados de exemplo baseados no seu backend
-  const data = [
-    { mes: 'JAN', valor: 2850.00, mesCompleto: 'Janeiro' },
-    { mes: 'FEV', valor: 2350.00, mesCompleto: 'Fevereiro' },
-    { mes: 'MAR', valor: 3200.00, mesCompleto: 'Março' },
-    { mes: 'ABR', valor: 2750.00, mesCompleto: 'Abril' },
-    { mes: 'MAI', valor: 2950.00, mesCompleto: 'Maio' },
-    { mes: 'JUN', valor: 2650.00, mesCompleto: 'Junho' },
-    { mes: 'JUL', valor: 3100.00, mesCompleto: 'Julho' },
-    { mes: 'AGO', valor: 2800.00, mesCompleto: 'Agosto' },
-    { mes: 'SET', valor: 2600.00, mesCompleto: 'Setembro' },
-    { mes: 'OUT', valor: 2900.00, mesCompleto: 'Outubro' },
-    { mes: 'NOV', valor: 3350.00, mesCompleto: 'Novembro' },
-    { mes: 'DEZ', valor: 3800.00, mesCompleto: 'Dezembro' }
-  ];
+export const GraficoSazonalidadeGastos = ({ data = [] }) => {
+  // Verifica se há dados
+  if (!data || data.length === 0) {
+    return (
+      <div className="w-full bg-white rounded-xl shadow-lg p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-500 text-lg">Nenhum dado disponível</p>
+            <p className="text-gray-400 text-sm">Carregue dados para visualizar o gráfico de sazonalidade</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Calculando estatísticas
   const valores = data.map(d => d.valor);
