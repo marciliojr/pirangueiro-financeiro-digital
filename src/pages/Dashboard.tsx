@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 const Dashboard = () => {
   const [date, setDate] = useState<Date>(new Date());
   const [mesesAtrasCartao, setMesesAtrasCartao] = useState<number>(12);
+  const [tabAtiva, setTabAtiva] = useState<string>("saude-financeira");
   const mes = date.getMonth() + 1;
   const ano = date.getFullYear();
 
@@ -143,7 +144,7 @@ const Dashboard = () => {
         />
       </div>
 
-      <Tabs defaultValue="saude-financeira" className="w-full">
+      <Tabs value={tabAtiva} onValueChange={setTabAtiva} className="w-full">
         <div className="overflow-x-auto pb-2">
           <TabsList className="w-full justify-start border-b mb-6 flex-nowrap">
             <TabsTrigger value="saude-financeira" className="flex items-center gap-2 whitespace-nowrap">
@@ -186,6 +187,7 @@ const Dashboard = () => {
             <GraficoDespesasCartao 
               dados={dadosDespesasCartao} 
               onMesesChange={setMesesAtrasCartao}
+              mesesAtual={mesesAtrasCartao}
             />
           )}
         </TabsContent>

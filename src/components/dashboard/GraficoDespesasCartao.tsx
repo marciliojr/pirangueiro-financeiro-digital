@@ -3,11 +3,12 @@ import { GraficoDespesasCartaoDTO } from "@/services/graficos";
 import { formatarMoeda } from "@/services/api";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 
 interface GraficoDespesasCartaoProps {
     dados: GraficoDespesasCartaoDTO;
     onMesesChange: (meses: number) => void;
+    mesesAtual: number;
 }
 
 interface DataPoint {
@@ -15,8 +16,13 @@ interface DataPoint {
     [key: string]: string | number; // Para permitir propriedades dinâmicas dos cartões
 }
 
-export function GraficoDespesasCartao({ dados, onMesesChange }: GraficoDespesasCartaoProps) {
-    const [anoSelecionado, setAnoSelecionado] = useState<string>(new Date().getFullYear().toString());
+export function GraficoDespesasCartao({ dados, onMesesChange, mesesAtual }: GraficoDespesasCartaoProps) {
+    const [periodoSelecionado, setPeriodoSelecionado] = useState<string>(mesesAtual.toString());
+    
+    // Sincronizar o estado local com o valor recebido do Dashboard
+    useEffect(() => {
+        setPeriodoSelecionado(mesesAtual.toString());
+    }, [mesesAtual]);
     
     // Preparar dados para o gráfico
     const dadosGrafico = dados.meses.map((mes, index) => {
@@ -43,8 +49,10 @@ export function GraficoDespesasCartao({ dados, onMesesChange }: GraficoDespesasC
         "#ec4899"  // Rosa escuro
     ];
 
-    // Obter anos únicos dos meses
-    const anos = [...new Set(dados.meses.map(mes => mes.split("/")[1]))];
+    const handlePeriodoChange = useCallback((value: string) => {
+        setPeriodoSelecionado(value);
+        onMesesChange(Number(value));
+    }, [onMesesChange]);
 
     return (
         <Card className="col-span-full">
@@ -53,23 +61,8 @@ export function GraficoDespesasCartao({ dados, onMesesChange }: GraficoDespesasC
                     <CardTitle>Despesas por Cartão</CardTitle>
                     <div className="flex gap-4">
                         <Select
-                            value={anoSelecionado}
-                            onValueChange={setAnoSelecionado}
-                        >
-                            <SelectTrigger className="w-[120px]">
-                                <SelectValue placeholder="Selecione o ano" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {anos.map(ano => (
-                                    <SelectItem key={ano} value={ano}>
-                                        {ano}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <Select
-                            defaultValue="12"
-                            onValueChange={(value) => onMesesChange(Number(value))}
+                            value={periodoSelecionado}
+                            onValueChange={handlePeriodoChange}
                         >
                             <SelectTrigger className="w-[180px]">
                                 <SelectValue placeholder="Selecione o período" />
