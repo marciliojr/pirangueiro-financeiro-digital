@@ -2,13 +2,14 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
-import { TrendingUp, TrendingDown, Wallet, PieChart, Activity, CreditCard, TrendingUpIcon } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, PieChart, Activity, CreditCard, TrendingUpIcon, BarChart3 } from "lucide-react";
 import { formatarMoeda } from "@/services/api";
 import { ReceitasService } from "@/services/receitas";
 import { DespesasService } from "@/services/despesas";
 import { GraficosService } from "@/services/graficos";
 import { FinanceSummaryCard } from "@/components/dashboard/FinanceSummaryCard";
 import { GraficoReceitasDespesas } from "@/components/dashboard/GraficoReceitasDespesas";
+import { GraficoReceitasDespesasMensal } from "@/components/dashboard/GraficoReceitasDespesasMensal";
 import GraficoSaudeFinanceira from "@/components/dashboard/GraficoSaudeFinanceira";
 import { GraficoDespesasCartao } from "@/components/dashboard/GraficoDespesasCartao";
 import { GraficoSazonalidadeGastos } from "@/components/dashboard/GraficoSazonalidadeGastos";
@@ -178,6 +179,10 @@ const Dashboard = () => {
               <Activity className="h-4 w-4" />
               <span>Saúde Financeira</span>
             </TabsTrigger>
+            <TabsTrigger value="receitas-despesas-mensal" className="flex items-center gap-2 whitespace-nowrap">
+              <BarChart3 className="h-4 w-4" />
+              <span>Receitas x Despesas</span>
+            </TabsTrigger>
             <TabsTrigger value="despesas-cartao" className="flex items-center gap-2 whitespace-nowrap">
               <CreditCard className="h-4 w-4" />
               <span>Despesas por Cartão</span>
@@ -203,10 +208,8 @@ const Dashboard = () => {
           )}
         </TabsContent>
 
-        <TabsContent value="tendencia-gastos">
-          {dadosTendenciaGastos && (
-            <GraficoTendenciaGastos dados={dadosTendenciaGastos} />
-          )}
+        <TabsContent value="receitas-despesas-mensal">
+          <GraficoReceitasDespesasMensal />
         </TabsContent>
 
         <TabsContent value="despesas-cartao">
@@ -216,6 +219,12 @@ const Dashboard = () => {
               onMesesChange={setMesesAtrasCartao}
               mesesAtual={mesesAtrasCartao}
             />
+          )}
+        </TabsContent>
+
+        <TabsContent value="tendencia-gastos">
+          {dadosTendenciaGastos && (
+            <GraficoTendenciaGastos dados={dadosTendenciaGastos} />
           )}
         </TabsContent>
 

@@ -129,6 +129,55 @@ export const GraficosService = {
         }
     },
 
+    // Novo método para buscar receitas x despesas por período mensal
+    buscarReceitasDespesasMensal: async (dataInicio?: string, dataFim?: string): Promise<{
+        dados: Array<{
+            mes: string;
+            totalReceitas: number;
+            totalDespesas: number;
+            saldo: number;
+        }>;
+        periodo: {
+            dataInicio: string;
+            dataFim: string;
+        };
+    }> => {
+        try {
+            let url = '/graficos/receitas-despesas';
+            const params = new URLSearchParams();
+            
+            if (dataInicio) params.append('dataInicio', dataInicio);
+            if (dataFim) params.append('dataFim', dataFim);
+            
+            if (params.toString()) {
+                url += '?' + params.toString();
+            }
+            
+            const response = await api.get(url);
+            
+            if (!response.data) {
+                return {
+                    dados: [],
+                    periodo: {
+                        dataInicio: dataInicio || new Date().toISOString().split('T')[0],
+                        dataFim: dataFim || new Date().toISOString().split('T')[0]
+                    }
+                };
+            }
+            
+            return response.data;
+        } catch (error) {
+            console.error("Erro ao buscar dados do gráfico mensal:", error);
+            return {
+                dados: [],
+                periodo: {
+                    dataInicio: dataInicio || new Date().toISOString().split('T')[0],
+                    dataFim: dataFim || new Date().toISOString().split('T')[0]
+                }
+            };
+        }
+    },
+
     buscarDashboardFinanceiro: async (mes: number, ano: number): Promise<DashboardFinanceiroDTO> => {
         try {
             const response = await api.get(`/graficos/dashboard-financeiro?mes=${mes}&ano=${ano}`);
