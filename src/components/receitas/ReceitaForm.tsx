@@ -178,6 +178,24 @@ export function ReceitaForm({ receita, isOpen, onClose, onSubmit }: ReceitaFormP
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending || isUploading;
 
+  // useEffect para atualizar os dados quando a receita muda
+  useEffect(() => {
+    if (receita) {
+      setFormData({
+        id: receita.id,
+        descricao: receita.descricao,
+        valor: receita.valor,
+        data: receita.data,
+        categoriaId: receita.categoria?.id || receita.categoriaId,
+        contaId: receita.conta?.id || receita.contaId,
+        anexoUrl: receita.anexoUrl || receita.anexo || "",
+        observacao: receita.observacao || ""
+      });
+      // Formata o valor corretamente multiplicando por 100 para converter para centavos
+      setValorFormatado(formatarValorMonetario((receita.valor * 100).toFixed(0)));
+    }
+  }, [receita]);
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">

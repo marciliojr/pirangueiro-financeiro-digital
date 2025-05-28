@@ -57,7 +57,7 @@ const Dashboard = () => {
   });
 
   const { data: dadosGrafico, isLoading: isLoadingGrafico } = useQuery({
-    queryKey: ["grafico-receitas-despesas", mes, ano],
+    queryKey: ["grafico-receitas-despesas-categoria", mes, ano],
     queryFn: () => GraficosService.buscarReceitasDespesas(mes, ano),
   });
 

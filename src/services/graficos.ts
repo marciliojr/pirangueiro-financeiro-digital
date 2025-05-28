@@ -69,7 +69,7 @@ export interface GraficoTendenciaGastosDTO {
 export const GraficosService = {
     buscarReceitasDespesas: async (mes: number, ano: number): Promise<GraficoReceitasDespesasDTO> => {
         try {
-            const response = await api.get(`/graficos/receitas-despesas?mes=${mes}&ano=${ano}`);
+            const response = await api.get(`/graficos/receitas-despesas-categoria?mes=${mes}&ano=${ano}`);
             
             // Se não houver dados, retornar estrutura vazia
             if (!response.data) {
