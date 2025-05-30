@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { NotificationBell } from '../ui/NotificationBell';
 import { SessionStatus } from '../ui/SessionStatus';
+import { InstallPWA } from '@/components/pwa/InstallPWA';
 import { Button } from '@/components/ui/button';
 import { User, LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -32,6 +33,7 @@ export const Header = () => {
           <div className="flex items-center gap-2 sm:gap-4">
             <NotificationBell />
             <SessionStatus />
+            <InstallPWA />
             
             <Button
               variant="ghost"
