@@ -4,6 +4,37 @@
 
 **URL**: https://lovable.dev/projects/9b77365c-c979-4951-9a61-19e83fa0efd4
 
+## Sistema de Autenticação
+
+Este projeto agora inclui um sistema completo de autenticação com as seguintes funcionalidades:
+
+### 🔐 Login e Controle de Acesso
+- **Tela de Login**: Interface completa para autenticação de usuários
+- **Credenciais Padrão**:
+  - Usuário: `adm`
+  - Senha: `123`
+- **Proteção de Rotas**: Todas as páginas do sistema são protegidas e requerem autenticação
+- **Persistência Local**: Os dados do usuário são salvos no `localStorage` do navegador
+
+### 👤 Gerenciamento de Usuário
+- **Botão de Usuário**: Localizado no cabeçalho, ao lado do botão de notificações
+- **Indicador Visual**: Ponto verde quando o usuário está autenticado
+- **Modal de Gestão**: Permite fazer login, logout e atualizar credenciais
+- **Validação**: Verificação de campos obrigatórios e confirmação de senha
+
+### 🔧 Funcionalidades Técnicas
+- **Context API**: Gerenciamento de estado global de autenticação
+- **localStorage**: Persistência automática dos dados do usuário
+- **Interface Responsiva**: Design adaptável para diferentes tamanhos de tela
+- **Feedback Visual**: Toasts informativos para todas as ações
+
+### 📱 Como Usar
+1. **Primeiro Acesso**: Use as credenciais padrão (adm/123)
+2. **Login**: Digite usuário e senha na tela inicial
+3. **Gerenciar Conta**: Clique no ícone de usuário no cabeçalho
+4. **Atualizar Dados**: Use a aba "Atualizar Usuário" no modal
+5. **Logout**: Disponível no modal quando autenticado
+
 ## How can I edit this code?
 
 There are several ways of editing your application.

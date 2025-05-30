@@ -4,8 +4,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "./components/theme-provider";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 
 import { Layout } from "./components/layout/Layout";
+import { LoginScreen } from "./components/auth/LoginScreen";
 import Dashboard from "./pages/Dashboard";
 import Contas from "./pages/Contas";
 import Categorias from "./pages/Categorias";
@@ -23,26 +25,40 @@ const queryClient = new QueryClient({
   },
 });
 
+const AppContent = () => {
+  const { isAuthenticated } = useAuth();
+
+  if (!isAuthenticated) {
+    return <LoginScreen />;
+  }
+
+  return (
+    <Layout>
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/contas" element={<Contas />} />
+        <Route path="/categorias" element={<Categorias />} />
+        <Route path="/cartoes" element={<Cartoes />} />
+        <Route path="/receitas" element={<Receitas />} />
+        <Route path="/despesas" element={<Despesas />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </Layout>
+  );
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider defaultTheme="system" storageKey="theme">
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Layout>
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/contas" element={<Contas />} />
-              <Route path="/categorias" element={<Categorias />} />
-              <Route path="/cartoes" element={<Cartoes />} />
-              <Route path="/receitas" element={<Receitas />} />
-              <Route path="/despesas" element={<Despesas />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Layout>
-        </BrowserRouter>
-      </TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AppContent />
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );
