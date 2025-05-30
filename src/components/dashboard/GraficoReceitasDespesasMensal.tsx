@@ -65,23 +65,70 @@ interface GraficoReceitasDespesasMensalProps {
 
 // Utilitários de formatação
 const formatarMes = (monthString: string): string => {
-    const [year, month] = monthString.split('-');
-    const date = new Date(parseInt(year), parseInt(month) - 1);
-    
-    return date.toLocaleDateString('pt-BR', {
-        month: 'short',
-        year: 'numeric'
-    });
+    try {
+        if (!monthString || typeof monthString !== 'string') {
+            return 'Mês inválido';
+        }
+        
+        const [year, month] = monthString.split('-');
+        if (!year || !month) {
+            return 'Mês inválido';
+        }
+        
+        const date = new Date(parseInt(year), parseInt(month) - 1);
+        
+        // Verificar se a data é válida
+        if (isNaN(date.getTime())) {
+            return 'Mês inválido';
+        }
+        
+        return date.toLocaleDateString('pt-BR', {
+            month: 'short',
+            year: 'numeric'
+        });
+    } catch (error) {
+        console.error('Erro ao formatar mês:', error);
+        return 'Mês inválido';
+    }
 };
 
 const formatarMesCompleto = (monthString: string): string => {
-    const [year, month] = monthString.split('-');
-    const date = new Date(parseInt(year), parseInt(month) - 1);
-    
-    return date.toLocaleDateString('pt-BR', {
-        month: 'long',
-        year: 'numeric'
-    });
+    try {
+        console.log('formatarMesCompleto - entrada:', monthString);
+        
+        if (!monthString || typeof monthString !== 'string') {
+            console.log('formatarMesCompleto - entrada inválida');
+            return 'Mês inválido';
+        }
+        
+        const [year, month] = monthString.split('-');
+        console.log('formatarMesCompleto - year:', year, 'month:', month);
+        
+        if (!year || !month) {
+            console.log('formatarMesCompleto - year ou month inválido');
+            return 'Mês inválido';
+        }
+        
+        const date = new Date(parseInt(year), parseInt(month) - 1);
+        console.log('formatarMesCompleto - date criado:', date);
+        
+        // Verificar se a data é válida
+        if (isNaN(date.getTime())) {
+            console.log('formatarMesCompleto - data inválida');
+            return 'Mês inválido';
+        }
+        
+        const resultado = date.toLocaleDateString('pt-BR', {
+            month: 'long',
+            year: 'numeric'
+        });
+        console.log('formatarMesCompleto - resultado:', resultado);
+        
+        return resultado;
+    } catch (error) {
+        console.error('Erro ao formatar mês completo:', error);
+        return 'Mês inválido';
+    }
 };
 
 // Componente de Tooltip customizado
@@ -95,6 +142,9 @@ const CustomTooltip = ({ active, payload, label }: {
     label?: string;
 }) => {
     if (active && payload && payload.length) {
+        // Log temporário para debug
+        console.log('CustomTooltip - label recebido:', label, 'tipo:', typeof label);
+        
         return (
             <div className="bg-white p-4 border border-gray-200 rounded-lg shadow-lg">
                 <p className="font-medium text-gray-900 mb-2">{label ? formatarMesCompleto(label) : ''}</p>
@@ -470,8 +520,9 @@ export function GraficoReceitasDespesasMensal({ className }: GraficoReceitasDesp
                                     <LineChart data={dados}>
                                         <CartesianGrid strokeDasharray="3 3" />
                                         <XAxis 
-                                            dataKey="mesFormatado" 
+                                            dataKey="mes" 
                                             tick={{ fontSize: 12 }}
+                                            tickFormatter={(value) => formatarMes(value)}
                                         />
                                         <YAxis 
                                             tick={{ fontSize: 12 }}
@@ -511,8 +562,9 @@ export function GraficoReceitasDespesasMensal({ className }: GraficoReceitasDesp
                                     <BarChart data={dados}>
                                         <CartesianGrid strokeDasharray="3 3" />
                                         <XAxis 
-                                            dataKey="mesFormatado" 
+                                            dataKey="mes" 
                                             tick={{ fontSize: 12 }}
+                                            tickFormatter={(value) => formatarMes(value)}
                                         />
                                         <YAxis 
                                             tick={{ fontSize: 12 }}

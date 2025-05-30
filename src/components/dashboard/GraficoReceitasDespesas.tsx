@@ -3,7 +3,7 @@ import { DadosGraficoDTO } from "@/services/graficos";
 import { formatarMoeda } from "@/services/api";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import { useState } from "react";
-import { TrendingUp, TrendingDown, DollarSign, PieChart as PieChartIcon } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign, PieChart as PieChartIcon, LucideIcon } from "lucide-react";
 
 interface GraficoReceitasDespesasProps {
     receitas: DadosGraficoDTO[];
@@ -22,6 +22,32 @@ interface DadosGrafico {
     percentual?: number;
 }
 
+// Tipagem para os parâmetros do Tooltip
+interface TooltipProps {
+    active?: boolean;
+    payload?: Array<{
+        name: string;
+        value: number;
+        payload: {
+            name: string;
+            value: number;
+            fill: string;
+            percentual?: number;
+        };
+    }>;
+    label?: string;
+}
+
+// Tipagem para os parâmetros do CustomLabel
+interface LabelProps {
+    cx: number;
+    cy: number;
+    midAngle: number;
+    innerRadius: number;
+    outerRadius: number;
+    percent: number;
+}
+
 // Paleta de cores moderna
 const CORES_RECEITAS = [
     '#10B981', '#059669', '#047857', '#065F46', 
@@ -33,14 +59,56 @@ const CORES_DESPESAS = [
     '#F87171', '#FCA5A5', '#FECACA', '#FEE2E2'
 ];
 
-const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
+// Função auxiliar para garantir que o valor seja um número válido
+const garantirNumero = (valor: unknown): number => {
+    if (typeof valor === 'number' && !isNaN(valor)) {
+        return valor;
+    }
+    if (typeof valor === 'string') {
+        const numero = parseFloat(valor);
+        return !isNaN(numero) ? numero : 0;
+    }
+    return 0;
+};
+
+// Função auxiliar para garantir que a categoria seja uma string válida
+const garantirCategoria = (categoria: unknown, indice: number): string => {
+    if (typeof categoria === 'string' && categoria.trim()) {
+        return categoria.trim();
+    }
+    return `Categoria ${indice + 1}`;
+};
+
+// Função para formatação segura de moeda
+const formatarMoedaSegura = (valor: unknown): string => {
+    try {
+        const numeroValido = garantirNumero(valor);
+        if (numeroValido === 0) {
+            return formatarMoeda(0);
+        }
+        return formatarMoeda(numeroValido);
+    } catch (error) {
+        console.error('Erro ao formatar moeda:', error, 'Valor:', valor);
+        return 'R$ 0,00';
+    }
+};
+
+const CustomTooltip = ({ active, payload }: TooltipProps) => {
+    if (active && payload && payload.length > 0) {
         const data = payload[0];
+        // Verificar se o valor é um número válido
+        const valor = typeof data.value === 'number' && !isNaN(data.value) ? data.value : 0;
+        
+        // Garantir que o nome seja sempre uma string válida
+        const nomeCategoria = typeof data.name === 'string' && data.name.trim() 
+            ? data.name.trim() 
+            : 'Categoria';
+        
         return (
             <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
-                <p className="font-medium text-gray-900">{data.name}</p>
+                <p className="font-medium text-gray-900">{nomeCategoria}</p>
                 <p className="text-sm text-gray-600">
-                    Valor: <span className="font-semibold">{formatarMoeda(data.value)}</span>
+                    Valor: <span className="font-semibold">{formatarMoedaSegura(valor)}</span>
                 </p>
                 {data.payload.percentual && (
                     <p className="text-sm text-gray-600">
@@ -53,7 +121,7 @@ const CustomTooltip = ({ active, payload }: any) => {
     return null;
 };
 
-const CustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
+const CustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: LabelProps) => {
     if (percent < 0.05) return null; // Não mostra label para fatias muito pequenas
     
     const RADIAN = Math.PI / 180;
@@ -85,7 +153,7 @@ const StatCard = ({
 }: { 
     title: string; 
     value: number; 
-    icon: any; 
+    icon: LucideIcon; 
     color: string; 
     bgColor: string; 
 }) => (
@@ -119,23 +187,27 @@ export function GraficoReceitasDespesas({
     // Verificar se há dados para exibir
     const temDados = receitas.length > 0 || despesas.length > 0;
 
-    // Preparar dados para os gráficos com cores automáticas
+    // Preparar dados para os gráficos com cores automáticas e validação de valores
     const dadosReceitas: DadosGrafico[] = receitas
+        .filter(r => r && r.categoria) // Filtrar itens inválidos
         .map((r, index) => ({
-            name: r.categoria,
-            value: r.valor,
+            name: garantirCategoria(r.categoria, index),
+            value: garantirNumero(r.valor),
             fill: r.cor || CORES_RECEITAS[index % CORES_RECEITAS.length],
-            percentual: r.percentual
+            percentual: garantirNumero(r.percentual)
         }))
+        .filter(r => r.value > 0) // Remover valores zero ou negativos
         .sort((a, b) => b.value - a.value);
 
     const dadosDespesas: DadosGrafico[] = despesas
+        .filter(d => d && d.categoria) // Filtrar itens inválidos
         .map((d, index) => ({
-            name: d.categoria,
-            value: d.valor,
+            name: garantirCategoria(d.categoria, index),
+            value: garantirNumero(d.valor),
             fill: d.cor || CORES_DESPESAS[index % CORES_DESPESAS.length],
-            percentual: d.percentual
+            percentual: garantirNumero(d.percentual)
         }))
+        .filter(d => d.value > 0) // Remover valores zero ou negativos
         .sort((a, b) => b.value - a.value);
 
     const meses = [
@@ -167,8 +239,6 @@ export function GraficoReceitasDespesas({
                     </div>
                 </CardHeader>
             </Card>
-
-
 
             {/* Gráficos */}
             <Card className="shadow-lg">
