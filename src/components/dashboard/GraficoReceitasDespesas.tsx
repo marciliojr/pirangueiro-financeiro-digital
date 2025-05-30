@@ -1,9 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { DadosGraficoDTO } from "@/services/graficos";
 import { formatarMoeda } from "@/services/api";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import { useState } from "react";
-import { TrendingUp, TrendingDown, DollarSign, PieChart as PieChartIcon, LucideIcon } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign, PieChart as PieChartIcon, LucideIcon, Download, FileText, Image } from "lucide-react";
+import { exportChart } from "@/lib/export-chart";
 
 interface GraficoReceitasDespesasProps {
     receitas: DadosGraficoDTO[];
@@ -183,6 +185,25 @@ export function GraficoReceitasDespesas({
 }: GraficoReceitasDespesasProps) {
     const [hoveredReceita, setHoveredReceita] = useState<string | null>(null);
     const [hoveredDespesa, setHoveredDespesa] = useState<string | null>(null);
+    const [exportando, setExportando] = useState(false);
+
+    // Função para exportar o gráfico
+    const handleExport = async (format: 'pdf' | 'jpg') => {
+        setExportando(true);
+        try {
+            const mesTexto = mes && ano ? `_${meses[mes - 1]}_${ano}` : '';
+            const filename = `grafico_distribuicao_categorias${mesTexto}`;
+            await exportChart({
+                elementId: 'grafico-receitas-despesas-categorias',
+                filename,
+                format
+            });
+        } catch (error) {
+            console.error('Erro ao exportar:', error);
+        } finally {
+            setExportando(false);
+        }
+    };
 
     // Verificar se há dados para exibir
     const temDados = receitas.length > 0 || despesas.length > 0;
@@ -236,12 +257,36 @@ export function GraficoReceitasDespesas({
                                 )}
                             </div>
                         </div>
+
+                        {/* Botões de Exportação */}
+                        <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleExport('pdf')}
+                                disabled={exportando || !temDados}
+                                className="flex items-center gap-2"
+                            >
+                                <FileText className="h-4 w-4" />
+                                PDF
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleExport('jpg')}
+                                disabled={exportando || !temDados}
+                                className="flex items-center gap-2"
+                            >
+                                <Image className="h-4 w-4" />
+                                JPG
+                            </Button>
+                        </div>
                     </div>
                 </CardHeader>
             </Card>
 
             {/* Gráficos */}
-            <Card className="shadow-lg">
+            <Card className="shadow-lg" id="grafico-receitas-despesas-categorias">
                 <CardContent className="p-6">
                     {!temDados ? (
                         <div className="h-[400px] w-full flex flex-col items-center justify-center text-gray-500">

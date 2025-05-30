@@ -1,8 +1,11 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
-import { TrendingUp, TrendingDown, CreditCard, Wallet, AlertTriangle, CheckCircle } from "lucide-react";
+import { TrendingUp, TrendingDown, CreditCard, Wallet, AlertTriangle, CheckCircle, FileText, Image } from "lucide-react";
+import { useState } from 'react';
+import { exportChart } from "@/lib/export-chart";
 
 // Interface simulada para demonstração
 interface CartaoLimiteDTO {
@@ -31,6 +34,25 @@ const formatarMoeda = (valor: number) => {
 };
 
 export default function GraficoSaudeFinanceira({ dados }: GraficoSaudeFinanceiraProps) {
+  const [exportando, setExportando] = useState(false);
+
+  // Função para exportar o gráfico
+  const handleExport = async (format: 'pdf' | 'jpg') => {
+    setExportando(true);
+    try {
+      const filename = `grafico_saude_financeira`;
+      await exportChart({
+        elementId: 'grafico-saude-financeira',
+        filename,
+        format
+      });
+    } catch (error) {
+      console.error('Erro ao exportar:', error);
+    } finally {
+      setExportando(false);
+    }
+  };
+
   // Preparar dados para o gráfico de barras dos cartões
   const dadosGrafico = dados.limitesCartoes.map(cartao => ({
     name: cartao.nomeCartao,
@@ -73,18 +95,44 @@ export default function GraficoSaudeFinanceira({ dados }: GraficoSaudeFinanceira
   const StatusIcon = healthStatus.icon;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" id="grafico-saude-financeira">
       {/* Header com Status Geral */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
               <Wallet className="w-5 h-5" />
-              Análise de Saúde Financeira
-            </CardTitle>
-            <div className={`flex items-center gap-2 ${healthStatus.color}`}>
-              <StatusIcon className="w-5 h-5" />
-              <span className="font-semibold">{healthStatus.status}</span>
+              <CardTitle>Análise de Saúde Financeira</CardTitle>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className={`flex items-center gap-2 ${healthStatus.color}`}>
+                <StatusIcon className="w-5 h-5" />
+                <span className="font-semibold">{healthStatus.status}</span>
+              </div>
+
+              {/* Botões de Exportação */}
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleExport('pdf')}
+                  disabled={exportando}
+                  className="flex items-center gap-2"
+                >
+                  <FileText className="h-4 w-4" />
+                  PDF
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleExport('jpg')}
+                  disabled={exportando}
+                  className="flex items-center gap-2"
+                >
+                  <Image className="h-4 w-4" />
+                  JPG
+                </Button>
+              </div>
             </div>
           </div>
         </CardHeader>

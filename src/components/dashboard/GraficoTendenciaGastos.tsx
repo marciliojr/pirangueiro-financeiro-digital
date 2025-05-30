@@ -1,7 +1,10 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowDown, ArrowUp, Minus, TrendingUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ArrowDown, ArrowUp, Minus, TrendingUp, FileText, Image } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
+import { useState } from 'react';
+import { exportChart } from "@/lib/export-chart";
 
 interface GraficoTendenciaGastosProps {
   dados: {
@@ -33,6 +36,25 @@ const formatarMes = (mes: string) => {
 };
 
 export function GraficoTendenciaGastos({ dados }: GraficoTendenciaGastosProps) {
+  const [exportando, setExportando] = useState(false);
+
+  // Função para exportar o gráfico
+  const handleExport = async (format: 'pdf' | 'jpg') => {
+    setExportando(true);
+    try {
+      const filename = `grafico_tendencia_gastos`;
+      await exportChart({
+        elementId: 'grafico-tendencia-gastos',
+        filename,
+        format
+      });
+    } catch (error) {
+      console.error('Erro ao exportar:', error);
+    } finally {
+      setExportando(false);
+    }
+  };
+
   // Preparar dados para o gráfico
   const dadosGrafico = dados.meses.map((mes, index) => ({
     mes: formatarMes(mes),
@@ -97,7 +119,7 @@ export function GraficoTendenciaGastos({ dados }: GraficoTendenciaGastosProps) {
   const variacaoPercentual = ((ultimoValor - primeiroValor) / primeiroValor) * 100;
 
   return (
-    <Card className="w-full">
+    <Card className="w-full" id="grafico-tendencia-gastos">
       <CardHeader>
         <div className="flex items-start justify-between">
           <div>
@@ -109,24 +131,50 @@ export function GraficoTendenciaGastos({ dados }: GraficoTendenciaGastosProps) {
               Análise dos últimos 12 meses com projeção
             </CardDescription>
           </div>
-          <div 
-            className="flex items-center gap-2 rounded-lg px-3 py-2"
-            style={{ backgroundColor: tendenciaConfig.corFundo }}
-          >
-            <IconeTendencia 
-              className="h-4 w-4" 
-              style={{ color: tendenciaConfig.cor }}
-            />
-            <div className="text-right">
-              <p 
-                className="text-sm font-semibold"
+          <div className="flex items-center gap-4">
+            <div 
+              className="flex items-center gap-2 rounded-lg px-3 py-2"
+              style={{ backgroundColor: tendenciaConfig.corFundo }}
+            >
+              <IconeTendencia 
+                className="h-4 w-4" 
                 style={{ color: tendenciaConfig.cor }}
+              />
+              <div className="text-right">
+                <p 
+                  className="text-sm font-semibold"
+                  style={{ color: tendenciaConfig.cor }}
+                >
+                  {tendenciaConfig.texto}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {tendenciaConfig.sinal}{formatarMoeda(Math.abs(dados.coeficienteAngular))}/mês
+                </p>
+              </div>
+            </div>
+
+            {/* Botões de Exportação */}
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleExport('pdf')}
+                disabled={exportando}
+                className="flex items-center gap-2"
               >
-                {tendenciaConfig.texto}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {tendenciaConfig.sinal}{formatarMoeda(Math.abs(dados.coeficienteAngular))}/mês
-              </p>
+                <FileText className="h-4 w-4" />
+                PDF
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleExport('jpg')}
+                disabled={exportando}
+                className="flex items-center gap-2"
+              >
+                <Image className="h-4 w-4" />
+                JPG
+              </Button>
             </div>
           </div>
         </div>
@@ -157,7 +205,7 @@ export function GraficoTendenciaGastos({ dados }: GraficoTendenciaGastosProps) {
                 y={dados.mediaGastos} 
                 stroke="#f59e0b" 
                 strokeDasharray="8 4"
-                label={{ value: "Média", position: "topRight", fontSize: 12 }}
+                label={{ value: "Média", position: "right", fontSize: 12 }}
               />
               
               <Tooltip

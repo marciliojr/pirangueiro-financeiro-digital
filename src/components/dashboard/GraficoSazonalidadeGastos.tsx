@@ -1,6 +1,9 @@
 import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
-import { TrendingUp, TrendingDown, Calendar, DollarSign, BarChart3 } from 'lucide-react';
+import { TrendingUp, TrendingDown, Calendar, DollarSign, BarChart3, FileText, Image } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { useState } from 'react';
+import { exportChart } from "@/lib/export-chart";
 
 interface TooltipPayload {
   payload: {
@@ -12,6 +15,25 @@ interface TooltipPayload {
 }
 
 export const GraficoSazonalidadeGastos = ({ data = [] }) => {
+  const [exportando, setExportando] = useState(false);
+
+  // Função para exportar o gráfico
+  const handleExport = async (format: 'pdf' | 'jpg') => {
+    setExportando(true);
+    try {
+      const filename = `grafico_sazonalidade_gastos`;
+      await exportChart({
+        elementId: 'grafico-sazonalidade-gastos',
+        filename,
+        format
+      });
+    } catch (error) {
+      console.error('Erro ao exportar:', error);
+    } finally {
+      setExportando(false);
+    }
+  };
+
   // Verifica se há dados
   if (!data || data.length === 0) {
     return (
@@ -64,14 +86,42 @@ export const GraficoSazonalidadeGastos = ({ data = [] }) => {
   };
 
   return (
-    <div className="w-full bg-white rounded-xl shadow-lg p-4 sm:p-6">
+    <div className="w-full bg-white rounded-xl shadow-lg p-4 sm:p-6" id="grafico-sazonalidade-gastos">
       {/* Header */}
       <div className="mb-4 sm:mb-6">
-        <div className="flex items-center gap-2 mb-2">
-          <BarChart3 className="w-6 h-6 text-blue-600" />
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Sazonalidade dos Gastos</h2>
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <BarChart3 className="w-6 h-6 text-blue-600" />
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Sazonalidade dos Gastos</h2>
+            </div>
+            <p className="text-sm sm:text-base text-gray-600">Média histórica de gastos por mês do ano</p>
+          </div>
+
+          {/* Botões de Exportação */}
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleExport('pdf')}
+              disabled={exportando || !data || data.length === 0}
+              className="flex items-center gap-2"
+            >
+              <FileText className="h-4 w-4" />
+              PDF
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleExport('jpg')}
+              disabled={exportando || !data || data.length === 0}
+              className="flex items-center gap-2"
+            >
+              <Image className="h-4 w-4" />
+              JPG
+            </Button>
+          </div>
         </div>
-        <p className="text-sm sm:text-base text-gray-600">Média histórica de gastos por mês do ano</p>
       </div>
 
       {/* Cards de estatísticas */}

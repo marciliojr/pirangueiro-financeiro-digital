@@ -1,9 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { GraficoDespesasCartaoDTO } from "@/services/graficos";
 import { formatarMoeda } from "@/services/api";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useCallback, useEffect } from "react";
+import { FileText, Image } from "lucide-react";
+import { exportChart } from "@/lib/export-chart";
 
 interface GraficoDespesasCartaoProps {
     dados: GraficoDespesasCartaoDTO;
@@ -18,6 +21,7 @@ interface DataPoint {
 
 export function GraficoDespesasCartao({ dados, onMesesChange, mesesAtual }: GraficoDespesasCartaoProps) {
     const [periodoSelecionado, setPeriodoSelecionado] = useState<string>(mesesAtual.toString());
+    const [exportando, setExportando] = useState(false);
     
     // Sincronizar o estado local com o valor recebido do Dashboard
     useEffect(() => {
@@ -54,8 +58,25 @@ export function GraficoDespesasCartao({ dados, onMesesChange, mesesAtual }: Graf
         onMesesChange(Number(value));
     }, [onMesesChange]);
 
+    // Função para exportar o gráfico
+    const handleExport = async (format: 'pdf' | 'jpg') => {
+        setExportando(true);
+        try {
+            const filename = `grafico_despesas_cartao_${periodoSelecionado}meses`;
+            await exportChart({
+                elementId: 'grafico-despesas-cartao',
+                filename,
+                format
+            });
+        } catch (error) {
+            console.error('Erro ao exportar:', error);
+        } finally {
+            setExportando(false);
+        }
+    };
+
     return (
-        <Card className="col-span-full">
+        <Card className="col-span-full" id="grafico-despesas-cartao">
             <CardHeader>
                 <div className="flex justify-between items-center">
                     <CardTitle>Despesas por Cartão</CardTitle>
@@ -76,6 +97,30 @@ export function GraficoDespesasCartao({ dados, onMesesChange, mesesAtual }: Graf
                                 <SelectItem value="48">Período de 48 meses</SelectItem>
                             </SelectContent>
                         </Select>
+
+                        {/* Botões de Exportação */}
+                        <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleExport('pdf')}
+                                disabled={exportando || dados.series.length === 0}
+                                className="flex items-center gap-2"
+                            >
+                                <FileText className="h-4 w-4" />
+                                PDF
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleExport('jpg')}
+                                disabled={exportando || dados.series.length === 0}
+                                className="flex items-center gap-2"
+                            >
+                                <Image className="h-4 w-4" />
+                                JPG
+                            </Button>
+                        </div>
                     </div>
                 </div>
             </CardHeader>
