@@ -28,14 +28,16 @@ export default defineConfig(({ mode }) => ({
         name: 'Pirangueiro Financeiro Digital',
         short_name: 'Pirangueiro',
         description: 'Seu assistente de finanças pessoais completo',
-        theme_color: '#ffffff',
+        theme_color: '#3b82f6',
         background_color: '#ffffff',
         display: 'standalone',
-        orientation: 'portrait',
+        orientation: 'portrait-primary',
         scope: '/',
         start_url: '/',
         categories: ['finance', 'productivity'],
         lang: 'pt-BR',
+        prefer_related_applications: false,
+        display_override: ['standalone', 'minimal-ui'],
         icons: [
           {
             src: 'pwa-192x192.png',
@@ -66,7 +68,7 @@ export default defineConfig(({ mode }) => ({
               cacheableResponse: {
                 statuses: [0, 200]
               },
-              networkTimeoutSeconds: 10
+              networkTimeoutSeconds: 5
             }
           },
           {
@@ -75,15 +77,15 @@ export default defineConfig(({ mode }) => ({
             options: {
               cacheName: 'images-cache',
               expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 dias
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24 * 30
               }
             }
           }
         ]
       },
       devOptions: {
-        enabled: false // Desabilita em desenvolvimento para não interferir
+        enabled: false
       }
     })
   ].filter(Boolean),

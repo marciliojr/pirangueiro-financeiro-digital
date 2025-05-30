@@ -16,53 +16,70 @@ export const InstallPWA = () => {
     }
   };
 
-  // Se está instalado, mostra o status
+  // Se está instalado, mostra status compacto
   if (isInstalled) {
     return (
-      <div className="flex items-center gap-2">
-        <Badge variant="outline" className="flex items-center gap-1 text-green-600 border-green-200">
+      <div className="flex items-center gap-1 sm:gap-2">
+        <Badge 
+          variant="outline" 
+          className="flex items-center gap-1 text-green-600 border-green-200 text-xs px-2 py-1"
+        >
           <Smartphone className="h-3 w-3" />
-          <span className="text-xs">App Instalado</span>
+          <span className="hidden xs:inline">Instalado</span>
+          <span className="xs:hidden">📱</span>
         </Badge>
+        
+        {/* Status de conexão só aparece se offline */}
         {!isOnline && (
-          <Badge variant="outline" className="flex items-center gap-1 text-orange-600 border-orange-200">
-            <WifiOff className="h-3 w-3" />
-            <span className="text-xs">Offline</span>
-          </Badge>
+          <div className="text-orange-500" title="Offline">
+            <WifiOff className="h-4 w-4" />
+          </div>
         )}
       </div>
     );
   }
 
-  // Se não é instalável, apenas mostra status de conexão se offline
+  // Se não é instalável, só mostra status offline se necessário
   if (!isInstallable) {
     return !isOnline ? (
-      <Badge variant="outline" className="flex items-center gap-1 text-orange-600 border-orange-200">
-        <WifiOff className="h-3 w-3" />
-        <span className="text-xs">Modo Offline</span>
-      </Badge>
-    ) : null;
+      <div className="flex items-center gap-1">
+        <Badge variant="outline" className="flex items-center gap-1 text-orange-600 border-orange-200 text-xs px-2 py-1">
+          <WifiOff className="h-3 w-3" />
+          <span className="hidden xs:inline">Offline</span>
+          <span className="xs:hidden">📶</span>
+        </Badge>
+      </div>
+    ) : (
+      /* Indicador discreto de status online em telas pequenas */
+      <div className="sm:hidden" title="Online">
+        <Wifi className="h-4 w-4 text-green-500 opacity-60" />
+      </div>
+    );
   }
 
-  // Mostra o botão de instalação
+  // Botão de instalação - super responsivo
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1 sm:gap-2">
       <Button
         onClick={handleInstall}
         variant="outline"
         size="sm"
-        className="flex items-center gap-2 text-blue-600 border-blue-200 hover:bg-blue-50"
+        className="flex items-center gap-1 sm:gap-2 text-blue-600 border-blue-200 hover:bg-blue-50 
+                   text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-7 sm:h-8 md:h-9"
       >
-        <Download className="h-4 w-4" />
-        <span className="hidden sm:inline">Instalar App</span>
-        <span className="sm:hidden">Instalar</span>
+        <Download className="h-3 w-3 sm:h-4 sm:w-4" />
+        
+        {/* Texto adaptativo por tamanho de tela */}
+        <span className="hidden lg:inline">Instalar App</span>
+        <span className="hidden sm:inline lg:hidden">Instalar</span>
+        <span className="sm:hidden">📥</span>
       </Button>
       
-      {/* Indicador de status de conexão */}
-      <div className="flex items-center">
+      {/* Indicador de conexão só em telas maiores */}
+      <div className="hidden sm:flex items-center">
         {isOnline ? (
           <div className="text-green-500" title="Online">
-            <Wifi className="h-4 w-4" />
+            <Wifi className="h-4 w-4 opacity-60" />
           </div>
         ) : (
           <div className="text-orange-500" title="Offline">
