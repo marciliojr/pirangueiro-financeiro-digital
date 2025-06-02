@@ -16,7 +16,6 @@ import { DespesaForm } from "@/components/despesas/DespesaForm";
 import { ConfirmDialog } from "@/components/despesas/ConfirmDialog";
 import { cn } from "@/lib/utils";
 import jsPDF from "jspdf";
-import autoTable, { UserOptions } from "jspdf-autotable";
 
 type SortField = 'descricao' | 'data' | 'categoria' | 'conta' | 'cartao' | 'valor';
 type SortOrder = 'asc' | 'desc';
@@ -225,99 +224,77 @@ const Despesas = () => {
   };
 
   const exportarPDF = async () => {
-    try {
-      // Buscar todas as despesas sem paginação
-      const despesas = await DespesasService.buscarSemPaginar(
-        searchTerm || undefined,
-        mesSelecionado,
-        anoSelecionado
-      );
-
-      const doc = new jsPDF();
-      
-      // Configurar fonte para suportar caracteres especiais
-      doc.setFont("helvetica");
-      
-      // Adicionar título
-      doc.setFontSize(20);
-      doc.text("Extrato de Despesas", 14, 20);
-      
-      // Adicionar data de geração e filtros aplicados
-      doc.setFontSize(10);
-      doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 14, 30);
-      
-      if (mesSelecionado && anoSelecionado) {
-        doc.text(`Período: ${formatarMesAno(mesSelecionado, anoSelecionado)}`, 14, 35);
-      }
-      
-      if (searchTerm) {
-        doc.text(`Filtro: ${searchTerm}`, 14, mesSelecionado && anoSelecionado ? 40 : 35);
-      }
-      
-      // Preparar dados para a tabela
-      const despesasOrdenadas = sortDespesas(despesas);
-      const dadosTabela = despesasOrdenadas.map((despesa, index) => [
-        (index + 1).toString(),
-        despesa.descricao,
-        formatarData(despesa.data),
-        getCategoryName(despesa),
-        getAccountName(despesa),
-        getCardName(despesa),
-        formatarMoeda(despesa.valor),
-        (despesa.anexo || despesa.anexoUrl) ? "Sim" : "Não",
-        despesa.quantidadeParcelas && despesa.quantidadeParcelas > 1 
-          ? `${despesa.numeroParcela}/${despesa.totalParcelas}`
-          : "-",
-        despesa.cartao ? (despesa.pago ? 'Sim' : 'Não') : '-'
-      ]);
-      
-      // Configurar e gerar a tabela
-      const tableOptions: UserOptions = {
-        head: [['Nº', 'Descrição', 'Data', 'Categoria', 'Conta', 'Cartão', 'Valor', 'Anexo', 'Parcelas', 'Prestação Paga']],
-        body: dadosTabela,
-        startY: searchTerm || (mesSelecionado && anoSelecionado) ? 45 : 40,
-        theme: 'striped',
-        headStyles: { fillColor: [66, 135, 245] },
-        styles: { 
-          fontSize: 8,
-          cellPadding: 2
-        },
-        columnStyles: {
-          0: { cellWidth: 10, halign: 'center' }, // Número
-          1: { cellWidth: 35 }, // Descrição
-          2: { cellWidth: 20 }, // Data
-          3: { cellWidth: 25 }, // Categoria
-          4: { cellWidth: 25 }, // Conta
-          5: { cellWidth: 25 }, // Cartão
-          6: { cellWidth: 25, halign: 'right' }, // Valor
-          7: { cellWidth: 25, halign: 'center' }, // Anexo
-          8: { cellWidth: 25, halign: 'center' }, // Parcelas
-          9: { cellWidth: 25, halign: 'center' } // Prestação Paga
-        }
-      };
-      
-      autoTable(doc, tableOptions);
-      
-      // Calcular o total (convertendo para number para garantir)
-      const totalDespesas = despesasOrdenadas.reduce((acc, despesa) => {
-        const valor = typeof despesa.valor === 'string' ? parseFloat(despesa.valor) : despesa.valor;
-        return acc + (isNaN(valor) ? 0 : valor);
-      }, 0);
-
-      const finalY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY || 40;
-      
-      doc.setFont("helvetica", "bold");
-      doc.text(`Total: ${formatarMoeda(totalDespesas)}`, 170, finalY + 10, { align: "right" });
-      
-      // Salvar o PDF
-      const dataHoje = new Date().toISOString().split('T')[0];
-      doc.save(`extrato_despesas_${dataHoje}.pdf`);
-      
-      toast.success("Extrato de despesas exportado com sucesso!");
-    } catch (error) {
-      console.error("Erro ao exportar PDF:", error);
-      toast.error("Erro ao gerar o extrato de despesas");
+    const doc = new jsPDF();
+    
+    // Configurar fonte para suportar caracteres especiais
+    doc.setFont("helvetica");
+    
+    // Adicionar título
+    doc.setFontSize(20);
+    doc.text("Extrato de Despesas", 14, 20);
+    
+    // Adicionar data de geração
+    doc.setFontSize(10);
+    doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 14, 30);
+    
+    if (mesSelecionado && anoSelecionado) {
+      doc.text(`Período: ${formatarMesAno(mesSelecionado, anoSelecionado)}`, 14, 40);
     }
+    
+    // Cabeçalhos da tabela
+    let yPosition = 55;
+    const lineHeight = 8;
+    
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text("Descrição", 14, yPosition);
+    doc.text("Data", 70, yPosition);
+    doc.text("Categoria", 95, yPosition);
+    doc.text("Conta", 125, yPosition);
+    doc.text("Cartão", 155, yPosition);
+    doc.text("Valor", 180, yPosition);
+    
+    yPosition += lineHeight;
+    
+    // Linha separadora
+    doc.line(14, yPosition, 200, yPosition);
+    yPosition += 5;
+    
+    // Dados das despesas
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    
+    const despesasParaExportar = despesasPage?.content || [];
+    const despesasOrdenadasExport = sortDespesas(despesasParaExportar);
+    
+    despesasOrdenadasExport.forEach(despesa => {
+      // Verificar se precisa de nova página
+      if (yPosition > 270) {
+        doc.addPage();
+        yPosition = 20;
+      }
+      
+      doc.text(despesa.descricao.substring(0, 15), 14, yPosition);
+      doc.text(formatarData(despesa.data), 70, yPosition);
+      doc.text(getCategoryName(despesa).substring(0, 12), 95, yPosition);
+      doc.text(getAccountName(despesa).substring(0, 12), 125, yPosition);
+      doc.text(getCardName(despesa).substring(0, 12), 155, yPosition);
+      doc.text(formatarMoeda(despesa.valor), 180, yPosition);
+      
+      yPosition += lineHeight;
+    });
+    
+    // Calcular e exibir total
+    const total = despesasParaExportar.reduce((sum, despesa) => sum + despesa.valor, 0);
+    yPosition += 10;
+    doc.line(14, yPosition, 200, yPosition);
+    yPosition += 10;
+    doc.setFont("helvetica", "bold");
+    doc.text(`Total: ${formatarMoeda(total)}`, 150, yPosition);
+    
+    // Salvar o PDF
+    doc.save(`despesas_${new Date().toISOString().split('T')[0]}.pdf`);
+    toast.success("Relatório PDF gerado com sucesso!");
   };
 
   return (

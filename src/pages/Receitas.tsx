@@ -14,7 +14,6 @@ import { ReceitaForm } from "@/components/receitas/ReceitaForm";
 import { ConfirmDialog } from "@/components/receitas/ConfirmDialog";
 import { cn } from "@/lib/utils";
 import jsPDF from "jspdf";
-import autoTable, { UserOptions } from "jspdf-autotable";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type SortField = 'descricao' | 'data' | 'categoria' | 'conta' | 'valor';
@@ -182,49 +181,55 @@ const Receitas = () => {
     doc.setFontSize(10);
     doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 14, 30);
     
-    // Preparar dados para a tabela
-    const dadosTabela = receitas.map(receita => [
-      receita.descricao,
-      formatarData(receita.data),
-      getCategoryName(receita),
-      getAccountName(receita),
-      formatarMoeda(receita.valor)
-    ]);
+    // Cabeçalhos da tabela
+    let yPosition = 50;
+    const lineHeight = 8;
     
-    // Configurar e gerar a tabela
-    const tableOptions: UserOptions = {
-      head: [['Descrição', 'Data', 'Categoria', 'Conta', 'Valor']],
-      body: dadosTabela,
-      startY: 40,
-      theme: 'striped',
-      headStyles: { fillColor: [34, 197, 94] }, // Cor verde para receitas
-      styles: { 
-        fontSize: 8,
-        cellPadding: 2
-      },
-      columnStyles: {
-        0: { cellWidth: 50 },
-        1: { cellWidth: 25 },
-        2: { cellWidth: 35 },
-        3: { cellWidth: 35 },
-        4: { cellWidth: 30, halign: 'right' }
-      }
-    };
-    
-    autoTable(doc, tableOptions);
-    
-    // Adicionar total
-    const totalReceitas = receitas.reduce((acc, receita) => acc + receita.valor, 0);
-    const finalY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY || 40;
-    
+    doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
-    doc.text(`Total: ${formatarMoeda(totalReceitas)}`, 170, finalY + 10, { align: "right" });
+    doc.text("Descrição", 14, yPosition);
+    doc.text("Data", 80, yPosition);
+    doc.text("Categoria", 110, yPosition);
+    doc.text("Conta", 150, yPosition);
+    doc.text("Valor", 180, yPosition);
+    
+    yPosition += lineHeight;
+    
+    // Linha separadora
+    doc.line(14, yPosition, 200, yPosition);
+    yPosition += 5;
+    
+    // Dados das receitas
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    
+    receitas.forEach(receita => {
+      // Verificar se precisa de nova página
+      if (yPosition > 270) {
+        doc.addPage();
+        yPosition = 20;
+      }
+      
+      doc.text(receita.descricao.substring(0, 20), 14, yPosition);
+      doc.text(formatarData(receita.data), 80, yPosition);
+      doc.text(getCategoryName(receita).substring(0, 15), 110, yPosition);
+      doc.text(getAccountName(receita).substring(0, 15), 150, yPosition);
+      doc.text(formatarMoeda(receita.valor), 180, yPosition);
+      
+      yPosition += lineHeight;
+    });
+    
+    // Calcular e exibir total
+    const total = receitas.reduce((sum, receita) => sum + receita.valor, 0);
+    yPosition += 10;
+    doc.line(14, yPosition, 200, yPosition);
+    yPosition += 10;
+    doc.setFont("helvetica", "bold");
+    doc.text(`Total: ${formatarMoeda(total)}`, 150, yPosition);
     
     // Salvar o PDF
-    const dataHoje = new Date().toISOString().split('T')[0];
-    doc.save(`extrato_Receitas_${dataHoje}.pdf`);
-    
-    toast.success("Extrato de receitas exportado com sucesso!");
+    doc.save(`receitas_${new Date().toISOString().split('T')[0]}.pdf`);
+    toast.success("Relatório PDF gerado com sucesso!");
   };
 
   // Componente para o botão de ordenação
