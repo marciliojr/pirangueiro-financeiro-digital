@@ -147,7 +147,6 @@ const Dashboard = () => {
         <FinanceSummaryCard 
           title="Receitas" 
           value={totalReceitas}
-          totalValue={totalReceitasAcumulado}
           icon={<TrendingUp className="h-5 w-5" />} 
           color="bg-emerald-50 dark:bg-emerald-950"
           iconColor="text-emerald-500"
@@ -156,7 +155,6 @@ const Dashboard = () => {
         <FinanceSummaryCard 
           title="Despesas" 
           value={totalDespesas}
-          totalValue={totalDespesasAcumulado}
           icon={<TrendingDown className="h-5 w-5" />} 
           color="bg-rose-50 dark:bg-rose-950"
           iconColor="text-rose-500"
@@ -165,10 +163,10 @@ const Dashboard = () => {
         <FinanceSummaryCard 
           title="Saldo" 
           value={saldo}
-          totalValue={totalReceitasAcumulado - totalDespesasAcumulado}
           icon={<Wallet className="h-5 w-5" />} 
           color="bg-blue-50 dark:bg-blue-950"
           iconColor="text-blue-500"
+          showTotal={true}
         />
       </div>
 

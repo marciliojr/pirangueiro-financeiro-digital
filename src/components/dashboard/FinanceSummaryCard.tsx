@@ -8,10 +8,11 @@ import { Button } from "@/components/ui/button";
 interface FinanceSummaryCardProps {
   title: string;
   value: number;
-  totalValue: number;
+  totalValue?: number;
   icon: ReactNode;
   color: string;
   iconColor: string;
+  showTotal?: boolean;
 }
 
 export function FinanceSummaryCard({
@@ -20,7 +21,8 @@ export function FinanceSummaryCard({
   totalValue,
   icon,
   color,
-  iconColor
+  iconColor,
+  showTotal = false
 }: FinanceSummaryCardProps) {
   const [showValues, setShowValues] = useState(true);
 
@@ -54,12 +56,14 @@ export function FinanceSummaryCard({
                 {showValues ? formatarMoeda(value) : "••••••"}
               </p>
             </div>
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">Total Acumulado:</p>
-              <p className="text-lg font-bold">
-                {showValues ? formatarMoeda(totalValue) : "••••••"}
-              </p>
-            </div>
+            {showTotal && totalValue !== undefined && (
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">Total Acumulado:</p>
+                <p className="text-lg font-bold">
+                  {showValues ? formatarMoeda(totalValue) : "••••••"}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </CardContent>

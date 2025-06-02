@@ -46,17 +46,17 @@ export const MensagemDoDia = () => {
 
   return (
     <Card className="w-full bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200 dark:border-blue-800">
-      <CardContent className="p-4 sm:p-6">
-        <div className="flex items-start gap-3">
+      <CardContent className="p-3">
+        <div className="flex items-start gap-2">
           <div className="flex-shrink-0">
-            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-full">
-              <Lightbulb className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-full">
+              <Lightbulb className="h-4 w-4 text-blue-600 dark:text-blue-400" />
             </div>
           </div>
           
           <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-xs font-semibold text-blue-900 dark:text-blue-100">
                 💭 Pensamento do Dia
               </h3>
               <Button
@@ -64,18 +64,18 @@ export const MensagemDoDia = () => {
                 size="sm"
                 onClick={handleRefresh}
                 disabled={loading}
-                className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 h-8 w-8 p-0"
+                className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 h-6 w-6 p-0"
               >
-                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
               </Button>
             </div>
             
             {loading ? (
               <div className="flex items-center gap-2">
-                <div className="h-2 bg-blue-200 dark:bg-blue-800 rounded-full animate-pulse w-full"></div>
+                <div className="h-1.5 bg-blue-200 dark:bg-blue-800 rounded-full animate-pulse w-full"></div>
               </div>
             ) : (
-              <p className="text-blue-800 dark:text-blue-200 text-sm leading-relaxed font-medium italic">
+              <p className="text-blue-800 dark:text-blue-200 text-xs leading-relaxed font-medium italic">
                 "{mensagem}"
               </p>
             )}
