@@ -392,11 +392,6 @@ export function GraficoReceitasDespesasMensal({ className }: GraficoReceitasDesp
                                 </PopoverContent>
                             </Popover>
 
-                            <Button onClick={aplicarFiltro} disabled={loading}>
-                                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Aplicar Filtro
-                            </Button>
-
                             <Button variant="outline" onClick={ultimos12Meses} disabled={loading}>
                                 Últimos 12 Meses
                             </Button>
@@ -421,6 +416,11 @@ export function GraficoReceitasDespesasMensal({ className }: GraficoReceitasDesp
                                     </SelectItem>
                                 </SelectContent>
                             </Select>
+
+                            <Button onClick={aplicarFiltro} disabled={loading}>
+                                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Aplicar Filtro
+                            </Button>
 
                             {/* Botões de Export */}
                             <Popover>

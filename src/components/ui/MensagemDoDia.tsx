@@ -24,7 +24,6 @@ export const MensagemDoDia = () => {
 
   const handleRefresh = async () => {
     await buscarMensagem();
-    toast.success('Mensagem do dia atualizada!');
   };
 
   useEffect(() => {
