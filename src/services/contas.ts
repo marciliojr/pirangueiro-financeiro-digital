@@ -42,6 +42,22 @@ const TIPOS_IMAGEM_PERMITIDOS = ['image/jpeg', 'image/png', 'image/gif'];
 export const ContasService = {
   listar: async (): Promise<ContaDTO[]> => {
     const response = await api.get("/contas");
+    
+    // Debug temporário - verificar se imagens estão sendo retornadas
+    console.log('=== DEBUG BACKEND RESPONSE ===');
+    console.log('Total de contas retornadas:', response.data.length);
+    
+    response.data.forEach((conta: ContaDTO, index: number) => {
+      console.log(`Conta ${index + 1} (ID: ${conta.id}):`, {
+        nome: conta.nome,
+        tipo: conta.tipo,
+        temImagemLogo: !!(conta.imagemLogo && conta.imagemLogo.length > 0),
+        tamanhoImagemLogo: conta.imagemLogo?.length || 0,
+        tipoImagemLogo: typeof conta.imagemLogo,
+        primeiros10Bytes: conta.imagemLogo?.slice(0, 10) || null
+      });
+    });
+    
     return response.data;
   },
 

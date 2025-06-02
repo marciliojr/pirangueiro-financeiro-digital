@@ -62,23 +62,109 @@ const Contas = () => {
     }
   }, [contas]);
 
+  // Função auxiliar para processar imagem
+  const processarImagem = (conta: ContaDTO): string | null => {
+    if (!conta.id || !conta.imagemLogo || conta.imagemLogo.length === 0) {
+      return null;
+    }
+
+    try {
+      console.log(`Processando imagem da conta ${conta.id}...`);
+      
+      // Verificar se é um array válido
+      if (!Array.isArray(conta.imagemLogo)) {
+        console.error(`Conta ${conta.id}: imagemLogo não é um array:`, typeof conta.imagemLogo);
+        return null;
+      }
+
+      // Tentar diferentes abordagens
+      const abordagens = [
+        // Abordagem 1: Uint8Array direto
+        () => {
+          const bytes = new Uint8Array(conta.imagemLogo!);
+          return { bytes, tipo: 'direct' };
+        },
+        // Abordagem 2: Mapear valores para garantir que são números
+        () => {
+          const bytes = new Uint8Array(conta.imagemLogo!.map(b => Number(b)));
+          return { bytes, tipo: 'mapped' };
+        },
+        // Abordagem 3: Base64 se os dados vieram como string
+        () => {
+          if (typeof conta.imagemLogo === 'string') {
+            const binaryString = atob(conta.imagemLogo);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+              bytes[i] = binaryString.charCodeAt(i);
+            }
+            return { bytes, tipo: 'base64' };
+          }
+          throw new Error('Não é string base64');
+        }
+      ];
+
+      for (const abordagem of abordagens) {
+        try {
+          const { bytes, tipo } = abordagem();
+          
+          if (bytes.length === 0) {
+            console.warn(`Conta ${conta.id}: Array de bytes vazio (${tipo})`);
+            continue;
+          }
+
+          // Detectar tipo MIME
+          let mimeType = 'image/png';
+          if (bytes.length >= 4) {
+            if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47) {
+              mimeType = 'image/png';
+            } else if (bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF) {
+              mimeType = 'image/jpeg';
+            }
+          }
+
+          const blob = new Blob([bytes], { type: mimeType });
+          
+          if (blob.size > 0) {
+            const url = URL.createObjectURL(blob);
+            console.log(`✅ Conta ${conta.id}: Sucesso com abordagem ${tipo} - ${mimeType}, ${blob.size} bytes`);
+            return url;
+          }
+        } catch (error) {
+          console.log(`Conta ${conta.id}: Falha na abordagem ${abordagem.name}:`, error);
+        }
+      }
+
+      console.error(`❌ Conta ${conta.id}: Todas as abordagens falharam`);
+      return null;
+    } catch (error) {
+      console.error(`Erro geral ao processar imagem da conta ${conta.id}:`, error);
+      return null;
+    }
+  };
+
   // Gerenciar URLs das imagens
   useEffect(() => {
     const newImageUrls: Record<number, string> = {};
     
+    // Debug temporário para verificar o que está chegando do backend
+    console.log('Processando contas para imagens:', contas.length);
+    
     contas.forEach(conta => {
+      console.log(`Conta ${conta.id}:`, {
+        temImagem: !!(conta.imagemLogo && conta.imagemLogo.length > 0),
+        tamanhoImagem: conta.imagemLogo?.length || 0,
+        primeiros4Bytes: conta.imagemLogo?.slice(0, 4) || []
+      });
+      
       if (conta.id && conta.imagemLogo && conta.imagemLogo.length > 0) {
-        try {
-          // Converter o array de bytes em uma string base64
-          const bytes = new Uint8Array(conta.imagemLogo);
-          const blob = new Blob([bytes], { type: 'image/png' });
-          newImageUrls[conta.id] = URL.createObjectURL(blob);
-        } catch (error) {
-          console.error('Erro ao converter imagem da conta:', error);
+        const url = processarImagem(conta);
+        if (url) {
+          newImageUrls[conta.id] = url;
         }
       }
     });
 
+    console.log('URLs de imagens criadas:', Object.keys(newImageUrls).length);
     setImageUrls(newImageUrls);
 
     // Cleanup function
@@ -207,6 +293,11 @@ const Contas = () => {
                           <AvatarImage 
                             src={imageUrls[conta.id]}
                             alt={conta.nome}
+                            onLoad={() => console.log(`✅ Imagem carregada com sucesso para conta ${conta.id}`)}
+                            onError={(e) => {
+                              console.error(`❌ Erro ao carregar imagem da conta ${conta.id}:`, e);
+                              console.log(`URL que falhou: ${imageUrls[conta.id!]}`);
+                            }}
                           />
                         ) : (
                           <AvatarFallback>{conta.nome.substring(0, 2).toUpperCase()}</AvatarFallback>
