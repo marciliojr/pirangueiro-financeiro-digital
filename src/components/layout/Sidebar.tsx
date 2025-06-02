@@ -6,6 +6,7 @@ import {
   CreditCard, 
   PiggyBank, 
   FileText,
+  BarChart3,
   Menu, 
   X 
 } from "lucide-react";
@@ -48,7 +49,8 @@ export const Sidebar = () => {
     { to: "/categorias", label: "Categorias", icon: FolderOpen },
     { to: "/cartoes", label: "Cartões", icon: CreditCard },
     { to: "/receitas", label: "Receitas", icon: PiggyBank },
-    { to: "/despesas", label: "Despesas", icon: FileText }
+    { to: "/despesas", label: "Despesas", icon: FileText },
+    { to: "/relatorios", label: "Relatórios", icon: BarChart3 }
   ];
 
   const toggleSidebar = () => {
