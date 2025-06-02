@@ -5,14 +5,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { LogIn, UserCog } from "lucide-react";
+import { LogIn, UserCog, Loader2 } from "lucide-react";
 
 export const LoginScreen: React.FC = () => {
   const { login } = useAuth();
   const [formData, setFormData] = useState({ username: '', password: '' });
   const [showCredentials, setShowCredentials] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.username || !formData.password) {
@@ -20,11 +21,20 @@ export const LoginScreen: React.FC = () => {
       return;
     }
 
-    const success = login(formData.username, formData.password);
-    if (success) {
-      toast.success("Login realizado com sucesso!");
-    } else {
-      toast.error("Usuário ou senha incorretos");
+    setIsLoading(true);
+    
+    try {
+      const success = await login(formData.username, formData.password);
+      if (success) {
+        toast.success("Login realizado com sucesso!");
+      } else {
+        toast.error("Usuário ou senha incorretos");
+      }
+    } catch (error) {
+      console.error("Erro durante o login:", error);
+      toast.error("Erro ao tentar fazer login. Tente novamente.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -48,6 +58,10 @@ export const LoginScreen: React.FC = () => {
             <CardTitle className="text-2xl text-center">Login</CardTitle>
             <CardDescription className="text-center">
               Digite suas credenciais para acessar o sistema
+              <br />
+              <span className="text-xs text-muted-foreground mt-1 block">
+                🔄 Integrado com backend para autenticação
+              </span>
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -61,6 +75,7 @@ export const LoginScreen: React.FC = () => {
                   onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
                   placeholder="Digite seu usuário"
                   className="h-11"
+                  disabled={isLoading}
                 />
               </div>
               <div className="space-y-2">
@@ -72,11 +87,21 @@ export const LoginScreen: React.FC = () => {
                   onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
                   placeholder="Digite sua senha"
                   className="h-11"
+                  disabled={isLoading}
                 />
               </div>
-              <Button type="submit" className="w-full h-11">
-                <LogIn className="w-4 h-4 mr-2" />
-                Entrar
+              <Button type="submit" className="w-full h-11" disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Autenticando...
+                  </>
+                ) : (
+                  <>
+                    <LogIn className="w-4 h-4 mr-2" />
+                    Entrar
+                  </>
+                )}
               </Button>
             </form>
 
@@ -95,6 +120,7 @@ export const LoginScreen: React.FC = () => {
               variant="outline"
               className="w-full h-11"
               onClick={() => setShowCredentials(!showCredentials)}
+              disabled={isLoading}
             >
               <UserCog className="w-4 h-4 mr-2" />
               {showCredentials ? 'Ocultar' : 'Mostrar'} Credenciais Padrão
@@ -109,6 +135,10 @@ export const LoginScreen: React.FC = () => {
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
                   Você pode alterar essas credenciais após fazer login.
+                  <br />
+                  <span className="text-green-600 dark:text-green-400">
+                    ✨ Sistema criará automaticamente no backend se não existir
+                  </span>
                 </p>
               </div>
             )}

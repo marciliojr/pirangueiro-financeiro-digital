@@ -6,8 +6,12 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "./components/theme-provider";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 
+// Importa diagnóstico para disponibilizar no console
+import "./utils/diagnostico";
+
 import { Layout } from "./components/layout/Layout";
 import { LoginScreen } from "./components/auth/LoginScreen";
+import { DebugUsuarios } from "./components/DebugUsuarios";
 import Dashboard from "./pages/Dashboard";
 import Contas from "./pages/Contas";
 import Categorias from "./pages/Categorias";
@@ -41,6 +45,7 @@ const AppContent = () => {
         <Route path="/cartoes" element={<Cartoes />} />
         <Route path="/receitas" element={<Receitas />} />
         <Route path="/despesas" element={<Despesas />} />
+        <Route path="/debug-usuarios" element={<DebugUsuarios />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Layout>

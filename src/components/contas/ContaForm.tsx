@@ -31,31 +31,38 @@ export function ContaForm({ conta, isOpen, onClose, onSubmit }: ContaFormProps) 
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    // Quando a conta mudar, atualizar o preview se houver imagemLogo
-    if (conta?.imagemLogo && conta.imagemLogo.length > 0) {
-      try {
-        // Converter o array de bytes em Blob
-        const bytes = new Uint8Array(conta.imagemLogo);
-        const blob = new Blob([bytes], { type: 'image/png' });
-        const objectUrl = URL.createObjectURL(blob);
-        setPreviewUrl(objectUrl);
-        
-        // Atualizar o formData com a imagem atual
-        setFormData(prev => ({
-          ...prev,
-          imagemLogo: conta.imagemLogo
-        }));
-      } catch (error) {
-        console.error('Erro ao criar preview da imagem:', error);
-        toast.error('Erro ao carregar a imagem da conta');
+    if (conta) {
+      setFormData({
+        id: conta.id,
+        nome: conta.nome,
+        tipo: conta.tipo,
+        imagemLogo: conta.imagemLogo
+      });
+
+      // Quando a conta mudar, atualizar o preview se houver imagemLogo
+      if (conta.imagemLogo && conta.imagemLogo.length > 0) {
+        try {
+          // Converter o array de bytes em Blob
+          const bytes = new Uint8Array(conta.imagemLogo);
+          const blob = new Blob([bytes], { type: 'image/png' });
+          const objectUrl = URL.createObjectURL(blob);
+          setPreviewUrl(objectUrl);
+        } catch (error) {
+          console.error('Erro ao criar preview da imagem:', error);
+          toast.error('Erro ao carregar a imagem da conta');
+        }
+      } else {
+        setPreviewUrl("");
       }
     } else {
-      setPreviewUrl("");
-      // Limpar imagemLogo do formData
-      setFormData(prev => ({
-        ...prev,
+      // Resetar formulário para nova conta
+      setFormData({
+        nome: "",
+        tipo: TipoConta.CORRENTE,
         imagemLogo: undefined
-      }));
+      });
+      setPreviewUrl("");
+      setFile(null);
     }
 
     return () => {
@@ -122,21 +129,10 @@ export function ContaForm({ conta, isOpen, onClose, onSubmit }: ContaFormProps) 
         // Validar o arquivo usando o serviço
         ContasService.validarImagem(selectedFile);
 
-        // Converter o arquivo para array de bytes
-        const arrayBuffer = await selectedFile.arrayBuffer();
-        const bytes = new Uint8Array(arrayBuffer);
-        
-        // Atualizar o formData com o novo array de bytes
-        setFormData(prev => ({
-          ...prev,
-          imagemLogo: Array.from(bytes)
-        }));
-
         setFile(selectedFile);
         
         // Criar URL temporária para preview
-        const blob = new Blob([bytes], { type: selectedFile.type });
-        const objectUrl = URL.createObjectURL(blob);
+        const objectUrl = URL.createObjectURL(selectedFile);
         
         // Limpar URL anterior se existir
         if (previewUrl) {
