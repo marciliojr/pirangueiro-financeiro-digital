@@ -4,12 +4,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Input } from "@/components/ui/input";
-import { Trash2, AlertTriangle, Download, Upload, Database, RefreshCw, FileText } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { Trash2, AlertTriangle, Download, Upload, Database, RefreshCw, FileText, Clock, CheckCircle, XCircle, History } from "lucide-react";
 import { ModalConfirmacaoLimpeza } from "@/components/admin/ModalConfirmacaoLimpeza";
 import { SplashScreen } from "@/components/admin/SplashScreen";
 import { AdminService } from "@/services/admin";
-import { BackupService, StatusBackup } from "@/services/backup";
+import { BackupService, StatusBackup, StatusImportacao } from "@/services/backup";
 import { toast } from "sonner";
 
 const Configuracoes = () => {
@@ -19,6 +20,8 @@ const Configuracoes = () => {
   const [carregandoStatus, setCarregandoStatus] = useState(true);
   const [operacaoEmAndamento, setOperacaoEmAndamento] = useState(false);
   const [arquivoSelecionado, setArquivoSelecionado] = useState<File | null>(null);
+  const [importacaoAtiva, setImportacaoAtiva] = useState<StatusImportacao | null>(null);
+  const [intervalId, setIntervalId] = useState<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
@@ -26,6 +29,15 @@ const Configuracoes = () => {
   useEffect(() => {
     carregarStatusBackup();
   }, []);
+
+  // Limpar intervalo ao desmontar o componente
+  useEffect(() => {
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [intervalId]);
 
   const carregarStatusBackup = async () => {
     try {
@@ -74,7 +86,7 @@ const Configuracoes = () => {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `backup-${new Date().toISOString().split('T')[0]}.json`;
+      link.download = `backup-pirangueiro-${new Date().toISOString().split('T')[0]}.json`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -114,6 +126,47 @@ const Configuracoes = () => {
     }
   };
 
+  const iniciarMonitoramentoImportacao = (requestId: string) => {
+    const interval = setInterval(async () => {
+      try {
+        const status = await BackupService.verificarStatusImportacao(requestId);
+        setImportacaoAtiva(status);
+
+        if (status.status === 'CONCLUIDO') {
+          clearInterval(interval);
+          setIntervalId(null);
+          toast.success(`✅ Backup importado com sucesso! ${status.totalRegistros} registros processados.`);
+          
+          // Limpar arquivo selecionado
+          setArquivoSelecionado(null);
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
+          
+          // Recarregar status após importação
+          await carregarStatusBackup();
+          
+          // Limpar status de importação após 5 segundos
+          setTimeout(() => {
+            setImportacaoAtiva(null);
+          }, 5000);
+        } else if (status.status === 'ERRO') {
+          clearInterval(interval);
+          setIntervalId(null);
+          toast.error(`❌ Erro na importação: ${status.erro || status.mensagem}`);
+          setImportacaoAtiva(null);
+        }
+      } catch (error) {
+        console.error('Erro ao verificar status:', error);
+        clearInterval(interval);
+        setIntervalId(null);
+        setImportacaoAtiva(null);
+      }
+    }, 2000); // Verifica a cada 2 segundos
+
+    setIntervalId(interval);
+  };
+
   const handleImportarBackup = async () => {
     if (!arquivoSelecionado) {
       toast.error("❌ Selecione um arquivo antes de importar.");
@@ -122,23 +175,75 @@ const Configuracoes = () => {
 
     try {
       setOperacaoEmAndamento(true);
-      const resultado = await BackupService.importarBackup(arquivoSelecionado);
       
-      toast.success(`✅ Backup importado com sucesso! ${resultado.totalRegistros} registros restaurados.`);
+      console.log('=== INICIANDO IMPORTAÇÃO ===');
+      console.log('Arquivo selecionado:', {
+        nome: arquivoSelecionado.name,
+        tamanho: arquivoSelecionado.size,
+        tipo: arquivoSelecionado.type,
+        ultimaModificacao: arquivoSelecionado.lastModified
+      });
       
-      // Limpar arquivo selecionado
-      setArquivoSelecionado(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+      const resultado = await BackupService.iniciarImportacao(arquivoSelecionado);
+      
+      console.log('=== RESULTADO DA IMPORTAÇÃO ===');
+      console.log('Resultado completo:', resultado);
+      
+      if (resultado.sucesso) {
+        toast.success("✅ Importação iniciada! Acompanhe o progresso abaixo.");
+        setImportacaoAtiva({
+          encontrado: true,
+          requestId: resultado.requestId,
+          status: 'INICIADO',
+          mensagem: resultado.mensagem,
+          dataInicio: resultado.dataInicio,
+          nomeArquivo: resultado.nomeArquivo
+        });
+        
+        // Iniciar monitoramento
+        iniciarMonitoramentoImportacao(resultado.requestId);
+      } else {
+        console.error('Importação falhou - sucesso = false');
+        toast.error("❌ Erro ao iniciar importação.");
       }
-      
-      // Recarregar status após importação
-      await carregarStatusBackup();
     } catch (error) {
-      console.error('Erro ao importar backup:', error);
-      toast.error("❌ Erro ao importar backup. Verifique se o arquivo é válido.");
+      console.error('=== ERRO NA IMPORTAÇÃO ===');
+      console.error('Erro completo:', error);
+      console.error('Tipo do erro:', typeof error);
+      console.error('Mensagem:', (error as Error).message);
+      
+      toast.error(`❌ ${(error as Error).message}`);
     } finally {
       setOperacaoEmAndamento(false);
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'INICIADO':
+        return 'bg-blue-500';
+      case 'PROCESSANDO':
+        return 'bg-yellow-500';
+      case 'CONCLUIDO':
+        return 'bg-green-500';
+      case 'ERRO':
+        return 'bg-red-500';
+      default:
+        return 'bg-gray-500';
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'INICIADO':
+      case 'PROCESSANDO':
+        return <Clock className="h-4 w-4" />;
+      case 'CONCLUIDO':
+        return <CheckCircle className="h-4 w-4" />;
+      case 'ERRO':
+        return <XCircle className="h-4 w-4" />;
+      default:
+        return <Clock className="h-4 w-4" />;
     }
   };
 
@@ -195,13 +300,16 @@ const Configuracoes = () => {
                 ) : statusBackup ? (
                   <div className="space-y-1">
                     <p className="text-xs text-blue-700 dark:text-blue-300">
-                      <span className="font-medium">Total de registros:</span> {statusBackup.totalRegistros}
+                      <span className="font-medium">Total de registros:</span> {statusBackup.totalRegistrosDisponiveis}
                     </p>
                     <p className="text-xs text-blue-700 dark:text-blue-300">
                       <span className="font-medium">Status:</span> {statusBackup.status}
                     </p>
                     <p className="text-xs text-blue-700 dark:text-blue-300">
                       <span className="font-medium">Serviço ativo:</span> {statusBackup.servicoAtivo ? '✅ Sim' : '❌ Não'}
+                    </p>
+                    <p className="text-xs text-blue-700 dark:text-blue-300">
+                      <span className="font-medium">Versão:</span> {statusBackup.versaoServico}
                     </p>
                   </div>
                 ) : (
@@ -234,7 +342,7 @@ const Configuracoes = () => {
                 <div className="space-y-1">
                   <h3 className="text-sm font-medium">Importar Backup</h3>
                   <p className="text-xs text-muted-foreground">
-                    Restaure seus dados a partir de um arquivo de backup
+                    Restaure seus dados a partir de um arquivo de backup (Processamento assíncrono)
                   </p>
                 </div>
                 
@@ -253,7 +361,7 @@ const Configuracoes = () => {
                     <Button
                       variant="outline"
                       onClick={handleSelecionarArquivo}
-                      disabled={operacaoEmAndamento}
+                      disabled={operacaoEmAndamento || !!importacaoAtiva}
                       className="w-full gap-2 py-8 border-dashed"
                     >
                       <Upload className="h-5 w-5" />
@@ -277,20 +385,71 @@ const Configuracoes = () => {
                             variant="outline"
                             size="sm"
                             onClick={handleRemoverArquivo}
-                            disabled={operacaoEmAndamento}
+                            disabled={operacaoEmAndamento || !!importacaoAtiva}
                           >
                             Remover
                           </Button>
                           <Button
                             size="sm"
                             onClick={handleImportarBackup}
-                            disabled={operacaoEmAndamento}
+                            disabled={operacaoEmAndamento || !!importacaoAtiva}
                             className="gap-2"
                           >
                             <Upload className="h-4 w-4" />
-                            {operacaoEmAndamento ? 'Importando...' : 'Importar'}
+                            {operacaoEmAndamento ? 'Iniciando...' : 'Importar'}
                           </Button>
                         </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Status da Importação Ativa */}
+                  {importacaoAtiva && (
+                    <div className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-950/20">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            {getStatusIcon(importacaoAtiva.status)}
+                            <span className="text-sm font-medium">Status da Importação</span>
+                          </div>
+                          <Badge className={`${getStatusColor(importacaoAtiva.status)} text-white`}>
+                            {importacaoAtiva.status}
+                          </Badge>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <p className="text-xs text-muted-foreground">
+                            <span className="font-medium">Arquivo:</span> {importacaoAtiva.nomeArquivo}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            <span className="font-medium">Iniciado em:</span> {new Date(importacaoAtiva.dataInicio).toLocaleString('pt-BR')}
+                          </p>
+                          {importacaoAtiva.tempoDecorrido && (
+                            <p className="text-xs text-muted-foreground">
+                              <span className="font-medium">Tempo decorrido:</span> {importacaoAtiva.tempoDecorrido}
+                            </p>
+                          )}
+                          {importacaoAtiva.totalRegistros && (
+                            <p className="text-xs text-muted-foreground">
+                              <span className="font-medium">Registros processados:</span> {importacaoAtiva.totalRegistros}
+                            </p>
+                          )}
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span>Progresso:</span>
+                            <span>{importacaoAtiva.status === 'CONCLUIDO' ? '100%' : 'Processando...'}</span>
+                          </div>
+                          <Progress 
+                            value={importacaoAtiva.status === 'CONCLUIDO' ? 100 : importacaoAtiva.status === 'ERRO' ? 0 : 50} 
+                            className="h-2"
+                          />
+                        </div>
+                        
+                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                          {importacaoAtiva.mensagem}
+                        </p>
                       </div>
                     </div>
                   )}
