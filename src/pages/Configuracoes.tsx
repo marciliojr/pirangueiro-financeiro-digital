@@ -1,26 +1,51 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Trash2, AlertTriangle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Trash2, AlertTriangle, Download, Upload, Database, RefreshCw, FileText } from "lucide-react";
 import { ModalConfirmacaoLimpeza } from "@/components/admin/ModalConfirmacaoLimpeza";
 import { SplashScreen } from "@/components/admin/SplashScreen";
 import { AdminService } from "@/services/admin";
+import { BackupService, StatusBackup } from "@/services/backup";
 import { toast } from "sonner";
 
 const Configuracoes = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [splashOpen, setSplashOpen] = useState(false);
+  const [statusBackup, setStatusBackup] = useState<StatusBackup | null>(null);
+  const [carregandoStatus, setCarregandoStatus] = useState(true);
+  const [operacaoEmAndamento, setOperacaoEmAndamento] = useState(false);
+  const [arquivoSelecionado, setArquivoSelecionado] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
-  const handleLimparDados = async () => {
+  // Carregar status do backup ao inicializar
+  useEffect(() => {
+    carregarStatusBackup();
+  }, []);
+
+  const carregarStatusBackup = async () => {
+    try {
+      setCarregandoStatus(true);
+      const status = await BackupService.obterStatus();
+      setStatusBackup(status);
+    } catch (error) {
+      console.error('Erro ao carregar status do backup:', error);
+      toast.error("❌ Erro ao carregar status do backup");
+    } finally {
+      setCarregandoStatus(false);
+    }
+  };
+
+  const handleLimparDados = async (confirmacao: string) => {
     setModalOpen(false);
     setSplashOpen(true);
 
     try {
-      await AdminService.limparBaseDados();
+      await AdminService.limparBaseDados(confirmacao);
       
       // Simular um pequeno delay para mostrar a splash screen
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -40,6 +65,91 @@ const Configuracoes = () => {
     }
   };
 
+  const handleBaixarBackup = async () => {
+    try {
+      setOperacaoEmAndamento(true);
+      const blob = await BackupService.exportarBackup();
+      
+      // Criar link para download
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `backup-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast.success("✅ Backup baixado com sucesso!");
+    } catch (error) {
+      console.error('Erro ao baixar backup:', error);
+      toast.error("❌ Erro ao baixar backup. Tente novamente.");
+    } finally {
+      setOperacaoEmAndamento(false);
+    }
+  };
+
+  const handleSelecionarArquivo = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleArquivoSelecionado = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.type === 'application/json' || file.name.endsWith('.json')) {
+        setArquivoSelecionado(file);
+      } else {
+        toast.error("❌ Por favor, selecione apenas arquivos JSON.");
+        event.target.value = '';
+      }
+    }
+  };
+
+  const handleRemoverArquivo = () => {
+    setArquivoSelecionado(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleImportarBackup = async () => {
+    if (!arquivoSelecionado) {
+      toast.error("❌ Selecione um arquivo antes de importar.");
+      return;
+    }
+
+    try {
+      setOperacaoEmAndamento(true);
+      const resultado = await BackupService.importarBackup(arquivoSelecionado);
+      
+      toast.success(`✅ Backup importado com sucesso! ${resultado.totalRegistros} registros restaurados.`);
+      
+      // Limpar arquivo selecionado
+      setArquivoSelecionado(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      
+      // Recarregar status após importação
+      await carregarStatusBackup();
+    } catch (error) {
+      console.error('Erro ao importar backup:', error);
+      toast.error("❌ Erro ao importar backup. Verifique se o arquivo é válido.");
+    } finally {
+      setOperacaoEmAndamento(false);
+    }
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
   return (
     <>
       <div className="container mx-auto py-6">
@@ -49,6 +159,146 @@ const Configuracoes = () => {
         />
 
         <div className="grid gap-6 mt-6">
+          {/* Seção Backup e Restauração */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+                <Database className="h-5 w-5" />
+                Backup e Restauração
+              </CardTitle>
+              <CardDescription>
+                Gerencie backups dos seus dados financeiros
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Card de Status */}
+              <div className="border rounded-lg p-4 bg-blue-50 dark:bg-blue-950/20">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                    Status do Sistema
+                  </h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={carregarStatusBackup}
+                    disabled={carregandoStatus}
+                    className="h-6 w-6 p-0"
+                  >
+                    <RefreshCw className={`h-3 w-3 ${carregandoStatus ? 'animate-spin' : ''}`} />
+                  </Button>
+                </div>
+                
+                {carregandoStatus ? (
+                  <p className="text-xs text-blue-700 dark:text-blue-300">
+                    Carregando status...
+                  </p>
+                ) : statusBackup ? (
+                  <div className="space-y-1">
+                    <p className="text-xs text-blue-700 dark:text-blue-300">
+                      <span className="font-medium">Total de registros:</span> {statusBackup.totalRegistros}
+                    </p>
+                    <p className="text-xs text-blue-700 dark:text-blue-300">
+                      <span className="font-medium">Status:</span> {statusBackup.status}
+                    </p>
+                    <p className="text-xs text-blue-700 dark:text-blue-300">
+                      <span className="font-medium">Serviço ativo:</span> {statusBackup.servicoAtivo ? '✅ Sim' : '❌ Não'}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-xs text-red-600 dark:text-red-400">
+                    Erro ao carregar status
+                  </p>
+                )}
+              </div>
+
+              {/* Botão Baixar Backup */}
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="space-y-1">
+                  <h3 className="text-sm font-medium">Baixar Backup</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Baixe um arquivo JSON com todos os seus dados
+                  </p>
+                </div>
+                <Button
+                  onClick={handleBaixarBackup}
+                  disabled={operacaoEmAndamento}
+                  className="gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  {operacaoEmAndamento ? 'Baixando...' : 'Baixar Backup'}
+                </Button>
+              </div>
+
+              {/* Seção de Importar Backup */}
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <h3 className="text-sm font-medium">Importar Backup</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Restaure seus dados a partir de um arquivo de backup
+                  </p>
+                </div>
+                
+                <div className="space-y-3">
+                  {/* Input de arquivo oculto */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".json,application/json"
+                    onChange={handleArquivoSelecionado}
+                    className="hidden"
+                  />
+                  
+                  {!arquivoSelecionado ? (
+                    /* Botão para selecionar arquivo */
+                    <Button
+                      variant="outline"
+                      onClick={handleSelecionarArquivo}
+                      disabled={operacaoEmAndamento}
+                      className="w-full gap-2 py-8 border-dashed"
+                    >
+                      <Upload className="h-5 w-5" />
+                      Clique para selecionar arquivo JSON
+                    </Button>
+                  ) : (
+                    /* Arquivo selecionado */
+                    <div className="border rounded-lg p-4 bg-muted/50">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <FileText className="h-5 w-5 text-primary" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{arquivoSelecionado.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatFileSize(arquivoSelecionado.size)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleRemoverArquivo}
+                            disabled={operacaoEmAndamento}
+                          >
+                            Remover
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={handleImportarBackup}
+                            disabled={operacaoEmAndamento}
+                            className="gap-2"
+                          >
+                            <Upload className="h-4 w-4" />
+                            {operacaoEmAndamento ? 'Importando...' : 'Importar'}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Seção Administração */}
           <Card>
             <CardHeader>
@@ -93,36 +343,6 @@ const Configuracoes = () => {
                     Certifique-se de ter backups antes de proceder.
                   </span>
                 </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Seção Sistema */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Informações do Sistema</CardTitle>
-              <CardDescription>
-                Detalhes sobre a aplicação
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-muted-foreground">Versão:</span>
-                  <span className="ml-2 font-medium">1.0.0</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Ambiente:</span>
-                  <span className="ml-2 font-medium">Desenvolvimento</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Framework:</span>
-                  <span className="ml-2 font-medium">React + TypeScript</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Backend:</span>
-                  <span className="ml-2 font-medium">Spring Boot</span>
-                </div>
               </div>
             </CardContent>
           </Card>

@@ -1,11 +1,11 @@
 import { api } from './api';
 
 export const AdminService = {
-  async limparBaseDados(): Promise<{ success: boolean; message: string }> {
+  async limparBaseDados(confirmacao: string): Promise<{ success: boolean; message: string }> {
     try {
       const response = await api.delete('admin/limpar-base-dados', {
         params: {
-          confirmacao: 'CONFIRMAR_LIMPEZA'
+          confirmacao: confirmacao
         }
       });
       return response.data;
