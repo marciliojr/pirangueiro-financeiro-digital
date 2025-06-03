@@ -154,20 +154,55 @@ interface ResumoExecutivoResponse {
 }
 
 export const relatoriosService = {
-  async gerarRelatorioGerencial(): Promise<RelatorioGerencial> {
-    const response = await api.get('/relatorios/gerencial');
-    return response.data;
-  },
-
-  async exportarRelatorioJson(): Promise<Blob> {
-    const response = await api.get('/relatorios/gerencial/export/json', {
-      responseType: 'blob'
+  async gerarRelatorioGerencial(dataInicio?: string, dataFim?: string): Promise<RelatorioGerencial> {
+    const params: { dataInicio?: string; dataFim?: string } = {};
+    
+    if (dataInicio) {
+      params.dataInicio = dataInicio;
+    }
+    
+    if (dataFim) {
+      params.dataFim = dataFim;
+    }
+    
+    const response = await api.get('/relatorios/gerencial', {
+      params
     });
     return response.data;
   },
 
-  async gerarResumoExecutivo(): Promise<ResumoExecutivoResponse> {
-    const response = await api.get('/relatorios/gerencial/resumo');
+  async exportarRelatorioJson(dataInicio?: string, dataFim?: string): Promise<Blob> {
+    const params: { dataInicio?: string; dataFim?: string } = {};
+    
+    if (dataInicio) {
+      params.dataInicio = dataInicio;
+    }
+    
+    if (dataFim) {
+      params.dataFim = dataFim;
+    }
+    
+    const response = await api.get('/relatorios/gerencial/export/json', {
+      responseType: 'blob',
+      params
+    });
+    return response.data;
+  },
+
+  async gerarResumoExecutivo(dataInicio?: string, dataFim?: string): Promise<ResumoExecutivoResponse> {
+    const params: { dataInicio?: string; dataFim?: string } = {};
+    
+    if (dataInicio) {
+      params.dataInicio = dataInicio;
+    }
+    
+    if (dataFim) {
+      params.dataFim = dataFim;
+    }
+    
+    const response = await api.get('/relatorios/gerencial/resumo', {
+      params
+    });
     return response.data;
   }
 }; 

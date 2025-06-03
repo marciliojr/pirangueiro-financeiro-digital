@@ -4,8 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
 import { useReactToPrint } from 'react-to-print';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { 
   Download, 
   FileText, 
@@ -19,15 +23,21 @@ import {
   Target,
   AlertTriangle,
   CheckCircle,
-  XCircle
+  XCircle,
+  CalendarIcon,
+  Filter,
+  RefreshCw
 } from 'lucide-react';
 import { relatoriosService, RelatorioGerencial } from '@/services/relatorios';
 import { formatarMoeda } from '@/services/api';
+import { cn } from '@/lib/utils';
 
 export default function Relatorios() {
   const [relatorio, setRelatorio] = useState<RelatorioGerencial | null>(null);
   const [loading, setLoading] = useState(true);
   const [exportandoPdf, setExportandoPdf] = useState(false);
+  const [dataInicio, setDataInicio] = useState<Date | undefined>();
+  const [dataFim, setDataFim] = useState<Date | undefined>();
   const componentePdfRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -37,13 +47,69 @@ export default function Relatorios() {
   const carregarRelatorio = async () => {
     try {
       setLoading(true);
-      const data = await relatoriosService.gerarRelatorioGerencial();
+      
+      // Formatar datas se existirem
+      const dataInicioFormatada = dataInicio ? format(dataInicio, 'yyyy-MM-dd') : undefined;
+      const dataFimFormatada = dataFim ? format(dataFim, 'yyyy-MM-dd') : undefined;
+      
+      const data = await relatoriosService.gerarRelatorioGerencial(dataInicioFormatada, dataFimFormatada);
       setRelatorio(data);
     } catch (error) {
       toast.error('Erro ao carregar relatório gerencial');
     } finally {
       setLoading(false);
     }
+  };
+
+  const aplicarFiltrosDatas = () => {
+    carregarRelatorio();
+  };
+
+  const limparFiltros = () => {
+    setDataInicio(undefined);
+    setDataFim(undefined);
+    // Recarregar automaticamente após limpar
+    setTimeout(() => {
+      carregarRelatorio();
+    }, 100);
+  };
+
+  const filtroRapido = (tipo: 'mes' | 'trimestre' | 'semestre' | 'ano') => {
+    const hoje = new Date();
+    const ano = hoje.getFullYear();
+    const mes = hoje.getMonth();
+
+    switch (tipo) {
+      case 'mes': {
+        setDataInicio(new Date(ano, mes, 1));
+        setDataFim(new Date(ano, mes + 1, 0));
+        break;
+      }
+      case 'trimestre': {
+        const trimestreAtual = Math.floor(mes / 3);
+        const mesInicioTrimestre = trimestreAtual * 3;
+        setDataInicio(new Date(ano, mesInicioTrimestre, 1));
+        setDataFim(new Date(ano, mesInicioTrimestre + 3, 0));
+        break;
+      }
+      case 'semestre': {
+        const semestreAtual = Math.floor(mes / 6);
+        const mesInicioSemestre = semestreAtual * 6;
+        setDataInicio(new Date(ano, mesInicioSemestre, 1));
+        setDataFim(new Date(ano, mesInicioSemestre + 6, 0));
+        break;
+      }
+      case 'ano': {
+        setDataInicio(new Date(ano, 0, 1));
+        setDataFim(new Date(ano, 11, 31));
+        break;
+      }
+    }
+    
+    // Aplicar filtro automaticamente após definir datas
+    setTimeout(() => {
+      carregarRelatorio();
+    }, 100);
   };
 
   const handleImprimirPdf = useReactToPrint({
@@ -163,23 +229,128 @@ export default function Relatorios() {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Cabeçalho - Apenas para tela */}
-      <div className="flex items-center justify-between no-print">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            {relatorio.cabecalho.icone} {relatorio.cabecalho.titulo}
-          </h1>
-          <p className="text-muted-foreground">{relatorio.cabecalho.subtitulo}</p>
-          <p className="text-sm text-muted-foreground">
-            Gerado em: {new Date(relatorio.cabecalho.dataGeracao).toLocaleString('pt-BR')}
-          </p>
+      {/* Cabeçalho e Filtros - Apenas para tela */}
+      <div className="no-print space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold flex items-center gap-2">
+              {relatorio.cabecalho.icone} {relatorio.cabecalho.titulo}
+            </h1>
+            <p className="text-muted-foreground">{relatorio.cabecalho.subtitulo}</p>
+            <p className="text-sm text-muted-foreground">
+              Gerado em: {new Date(relatorio.cabecalho.dataGeracao).toLocaleString('pt-BR')}
+              {(dataInicio || dataFim) && (
+                <span className="ml-2 text-blue-600">
+                  | Período: {dataInicio ? format(dataInicio, 'dd/MM/yyyy', { locale: ptBR }) : 'Início'} 
+                  {' até '}
+                  {dataFim ? format(dataFim, 'dd/MM/yyyy', { locale: ptBR }) : 'Fim'}
+                </span>
+              )}
+            </p>
+          </div>
         </div>
+
+        {/* Filtros de Data */}
+        <Card className="border-dashed">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Filter className="h-5 w-5" />
+              Filtros de Data
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Seletores de Data */}
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">De:</span>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-[140px] justify-start text-left font-normal",
+                        !dataInicio && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dataInicio ? format(dataInicio, "dd/MM/yyyy") : "Data início"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={dataInicio}
+                      onSelect={setDataInicio}
+                      initialFocus
+                      locale={ptBR}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">Até:</span>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-[140px] justify-start text-left font-normal",
+                        !dataFim && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dataFim ? format(dataFim, "dd/MM/yyyy") : "Data fim"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={dataFim}
+                      onSelect={setDataFim}
+                      initialFocus
+                      locale={ptBR}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <Button onClick={aplicarFiltrosDatas} disabled={loading}>
+                <RefreshCw className={cn("h-4 w-4 mr-2", loading && "animate-spin")} />
+                Aplicar Filtro
+              </Button>
+
+              <Button variant="outline" onClick={limparFiltros} disabled={loading}>
+                Limpar Filtros
+              </Button>
+            </div>
+
+            {/* Filtros Rápidos */}
+            <div className="flex flex-wrap gap-2">
+              <span className="text-sm font-medium self-center">Filtros rápidos:</span>
+              <Button variant="outline" size="sm" onClick={() => filtroRapido('mes')}>
+                Este Mês
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => filtroRapido('trimestre')}>
+                Este Trimestre
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => filtroRapido('semestre')}>
+                Este Semestre
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => filtroRapido('ano')}>
+                Este Ano
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Botões de Ação */}
         <div className="flex gap-2">
-          <Button onClick={carregarRelatorio} variant="outline">
-            <FileText className="h-4 w-4 mr-2" />
+          <Button onClick={carregarRelatorio} variant="outline" disabled={loading}>
+            <RefreshCw className={cn("h-4 w-4 mr-2", loading && "animate-spin")} />
             Atualizar
           </Button>
-          <Button onClick={exportarRelatorioPdf} disabled={exportandoPdf}>
+          <Button onClick={exportarRelatorioPdf} disabled={exportandoPdf || loading}>
             <Download className="h-4 w-4 mr-2" />
             {exportandoPdf ? 'Gerando PDF...' : 'Exportar PDF'}
           </Button>
