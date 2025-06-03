@@ -8,7 +8,8 @@ import {
   FileText,
   BarChart3,
   Menu, 
-  X 
+  X,
+  Settings
 } from "lucide-react";
 import { useState } from "react";
 import { ThemeToggle } from "./ThemeToggle";
@@ -104,7 +105,19 @@ export const Sidebar = () => {
             </p>
           )}
         </div>
-        <ThemeToggle />
+        <div className="flex items-center gap-2">
+          <Link
+            to="/configuracoes"
+            className={cn(
+              "flex h-10 w-10 items-center justify-center rounded-full transition-all duration-300",
+              "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+            )}
+            title="Configurações"
+          >
+            <Settings className="h-5 w-5 transition-transform duration-300 ease-in-out" />
+          </Link>
+          <ThemeToggle />
+        </div>
       </div>
     </aside>
   );

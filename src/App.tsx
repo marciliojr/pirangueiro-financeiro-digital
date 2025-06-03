@@ -19,6 +19,7 @@ import Cartoes from "./pages/Cartoes";
 import Receitas from "./pages/Receitas";
 import Despesas from "./pages/Despesas";
 import Relatorios from "./pages/Relatorios";
+import Configuracoes from "./pages/Configuracoes";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -47,6 +48,7 @@ const AppContent = () => {
         <Route path="/receitas" element={<Receitas />} />
         <Route path="/despesas" element={<Despesas />} />
         <Route path="/relatorios" element={<Relatorios />} />
+        <Route path="/configuracoes" element={<Configuracoes />} />
         <Route path="/debug-usuarios" element={<DebugUsuarios />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
