@@ -26,7 +26,7 @@ const Dashboard = () => {
   const [mes, setMes] = useState<number>(mesAtual);
   const [ano, setAno] = useState<number>(anoAtual);
   const [mesesAtrasCartao, setMesesAtrasCartao] = useState<number>(12);
-  const [tabAtiva, setTabAtiva] = useState<string>("saude-financeira");
+  const [tabAtiva, setTabAtiva] = useState<string>("receitas-despesas-mensal");
 
   // Lista de meses
   const meses = [
@@ -101,6 +101,16 @@ const Dashboard = () => {
   const totalReceitas = receitasArray.reduce((acc, receita) => acc + receita.valor, 0);
   const totalDespesas = despesasArray.reduce((acc, despesa) => acc + despesa.valor, 0);
   const saldo = totalReceitas - totalDespesas;
+  const saldoTotal = totalReceitasAcumulado - totalDespesasAcumulado;
+
+  // Debug - verificar valores
+  console.log("Debug Dashboard - Valores:");
+  console.log("Total Receitas Mensal:", totalReceitas);
+  console.log("Total Despesas Mensal:", totalDespesas);
+  console.log("Saldo Mensal:", saldo);
+  console.log("Total Receitas Acumulado (endpoint):", totalReceitasAcumulado);
+  console.log("Total Despesas Acumulado (endpoint):", totalDespesasAcumulado);
+  console.log("Saldo Total:", saldoTotal);
 
   // Se os dados estiverem carregando, você pode mostrar um indicador de carregamento
   if (isLoadingReceitas || isLoadingDespesas || isLoadingGrafico || isLoadingSaudeFinanceira || isLoadingDespesasCartao || isLoadingSazonalidade || isLoadingTendenciaGastos) {
@@ -163,6 +173,7 @@ const Dashboard = () => {
         <FinanceSummaryCard 
           title="Saldo" 
           value={saldo}
+          totalValue={saldoTotal}
           icon={<Wallet className="h-5 w-5" />} 
           color="bg-blue-50 dark:bg-blue-950"
           iconColor="text-blue-500"
@@ -173,13 +184,13 @@ const Dashboard = () => {
       <Tabs value={tabAtiva} onValueChange={setTabAtiva} className="w-full">
         <div className="overflow-x-auto pb-2">
           <TabsList className="w-full justify-start border-b mb-6 flex-nowrap">
-            <TabsTrigger value="saude-financeira" className="flex items-center gap-2 whitespace-nowrap">
-              <Activity className="h-4 w-4" />
-              <span>Saúde Financeira</span>
-            </TabsTrigger>
             <TabsTrigger value="receitas-despesas-mensal" className="flex items-center gap-2 whitespace-nowrap">
               <BarChart3 className="h-4 w-4" />
               <span>Receitas x Despesas</span>
+            </TabsTrigger>
+            <TabsTrigger value="saude-financeira" className="flex items-center gap-2 whitespace-nowrap">
+              <Activity className="h-4 w-4" />
+              <span>Saúde Financeira</span>
             </TabsTrigger>
             <TabsTrigger value="despesas-cartao" className="flex items-center gap-2 whitespace-nowrap">
               <CreditCard className="h-4 w-4" />
@@ -200,14 +211,14 @@ const Dashboard = () => {
           </TabsList>
         </div>
 
+        <TabsContent value="receitas-despesas-mensal">
+          <GraficoReceitasDespesasMensal />
+        </TabsContent>
+
         <TabsContent value="saude-financeira">
           {dadosSaudeFinanceira && (
             <GraficoSaudeFinanceira dados={dadosSaudeFinanceira} />
           )}
-        </TabsContent>
-
-        <TabsContent value="receitas-despesas-mensal">
-          <GraficoReceitasDespesasMensal />
         </TabsContent>
 
         <TabsContent value="despesas-cartao">
