@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ReceitasService, ReceitaDTO } from "@/services/receitas";
+import { ReceitasService, ReceitaDTO, converterArquivoParaByteArray } from "@/services/receitas";
 import { CategoriasService, CategoriaDTO } from "@/services/categorias";
 import { ContasService, ContaDTO } from "@/services/contas";
-import { uploadArquivo, formatarData, formatarMoeda, formatarValorMonetario } from "@/services/api";
+import { formatarData, formatarMoeda, formatarValorMonetario } from "@/services/api";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -32,7 +32,7 @@ export function ReceitaForm({ receita, isOpen, onClose, onSubmit }: ReceitaFormP
     data: receita?.data || format(new Date(), "yyyy-MM-dd"),
     categoriaId: receita?.categoriaId || receita?.categoria?.id,
     contaId: receita?.contaId || receita?.conta?.id,
-    anexoUrl: receita?.anexoUrl || receita?.anexo || "",
+    anexoUrl: receita?.anexoUrl || "",
     observacao: receita?.observacao || ""
   });
   const [valorFormatado, setValorFormatado] = useState(formData.valor ? formatarValorMonetario(formData.valor.toString()) : '0,00');
@@ -151,17 +151,16 @@ export function ReceitaForm({ receita, isOpen, onClose, onSubmit }: ReceitaFormP
 
     try {
       setIsUploading(true);
-      let anexoUrl = formData.anexoUrl;
-
-      if (file) {
-        anexoUrl = await uploadArquivo(file);
-      }
-
-      const receitaData = {
+      let receitaData = {
         ...formData,
-        anexoUrl,
         valor: Number(valorFormatado.replace(/\D/g, "")) / 100,
       };
+
+      // Se um arquivo foi selecionado, converter para byte array
+      if (file) {
+        const anexoByteArray = await converterArquivoParaByteArray(file);
+        receitaData.anexo = anexoByteArray;
+      }
 
       if (receita?.id) {
         await updateMutation.mutateAsync(receitaData);
@@ -188,7 +187,7 @@ export function ReceitaForm({ receita, isOpen, onClose, onSubmit }: ReceitaFormP
         data: receita.data,
         categoriaId: receita.categoria?.id || receita.categoriaId,
         contaId: receita.conta?.id || receita.contaId,
-        anexoUrl: receita.anexoUrl || receita.anexo || "",
+        anexoUrl: receita.anexoUrl || "",
         observacao: receita.observacao || ""
       });
       // Formata o valor corretamente multiplicando por 100 para converter para centavos

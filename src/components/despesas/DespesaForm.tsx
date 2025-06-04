@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { DespesasService, DespesaDTO } from "@/services/despesas";
+import { DespesasService, DespesaDTO, converterArquivoParaByteArray } from "@/services/despesas";
 import { CartoesService } from "@/services/cartoes";
 import { ContaDTO } from "@/services/contas";
 import { CategoriaDTO } from "@/services/categorias";
-import { uploadArquivo, formatarData, formatarMoeda, formatarValorMonetario } from "@/services/api";
+import { formatarData, formatarMoeda, formatarValorMonetario } from "@/services/api";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -52,7 +52,7 @@ export function DespesaForm({ despesa, isOpen, onClose, onSubmit }: DespesaFormP
     categoriaId: despesa?.categoriaId || despesa?.categoria?.id,
     contaId: despesa?.contaId || despesa?.conta?.id,
     cartaoId: despesa?.cartaoId || undefined,
-    anexoUrl: despesa?.anexoUrl || despesa?.anexo || "",
+    anexoUrl: despesa?.anexoUrl || "",
     observacao: despesa?.observacao || "",
     quantidadeParcelas: despesa?.quantidadeParcelas || 1,
     pago: despesa?.pago || false
@@ -181,6 +181,7 @@ export function DespesaForm({ despesa, isOpen, onClose, onSubmit }: DespesaFormP
     }
     
     try {
+      setIsUploading(true);
       const updatedFormData = { ...formData };
       
       // Remove o campo quantidadeParcelas se for 1
@@ -188,11 +189,10 @@ export function DespesaForm({ despesa, isOpen, onClose, onSubmit }: DespesaFormP
         delete updatedFormData.quantidadeParcelas;
       }
       
+      // Se um arquivo foi selecionado, converter para byte array
       if (file) {
-        setIsUploading(true);
-        const anexoUrl = await uploadArquivo(file);
-        updatedFormData.anexoUrl = anexoUrl;
-        setIsUploading(false);
+        const anexoByteArray = await converterArquivoParaByteArray(file);
+        updatedFormData.anexo = anexoByteArray;
       }
       
       if (despesa?.id) {
@@ -202,6 +202,7 @@ export function DespesaForm({ despesa, isOpen, onClose, onSubmit }: DespesaFormP
       }
     } catch (error) {
       toast.error("Erro ao salvar despesa");
+    } finally {
       setIsUploading(false);
     }
   };
@@ -215,6 +216,7 @@ export function DespesaForm({ despesa, isOpen, onClose, onSubmit }: DespesaFormP
         categoriaId: despesa.categoria?.id || despesa.categoriaId,
         contaId: despesa.conta?.id || despesa.contaId,
         cartaoId: despesa.cartao?.id || despesa.cartaoId,
+        anexoUrl: despesa.anexoUrl || "",
       });
       // Formata o valor corretamente
       setValorFormatado(formatarValorMonetario((despesa.valor * 100).toFixed(0)));

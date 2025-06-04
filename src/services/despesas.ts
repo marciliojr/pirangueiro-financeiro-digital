@@ -11,8 +11,8 @@ export interface DespesaDTO {
   conta?: ContaDTO;
   cartao?: CartaoDTO;
   categoria?: CategoriaDTO;
-  anexo?: string;
-  anexoUrl?: string;
+  anexo?: number[]; // byte[] do backend será convertido para number[]
+  anexoUrl?: string; // Mantendo para compatibilidade com exibição
   observacao?: string;
   // Mantendo os IDs para compatibilidade com o código existente
   categoriaId?: number;
@@ -23,6 +23,24 @@ export interface DespesaDTO {
   totalParcelas?: number;
   pago?: boolean;
 }
+
+// Função utilitária para converter File para byte array
+export const converterArquivoParaByteArray = async (file: File): Promise<number[]> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (reader.result) {
+        const arrayBuffer = reader.result as ArrayBuffer;
+        const byteArray = Array.from(new Uint8Array(arrayBuffer));
+        resolve(byteArray);
+      } else {
+        reject(new Error('Falha ao ler o arquivo'));
+      }
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsArrayBuffer(file);
+  });
+};
 
 export interface PageDTO<T> {
   content: T[];

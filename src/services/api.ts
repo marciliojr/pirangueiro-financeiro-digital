@@ -76,6 +76,13 @@ export const uploadArquivo = async (file: File): Promise<string> => {
   });
 };
 
+// Função para converter byte array de volta para blob e criar URL de objeto
+export const criarUrlDeAnexo = (byteArray: number[], mimeType: string = 'application/octet-stream'): string => {
+  const uint8Array = new Uint8Array(byteArray);
+  const blob = new Blob([uint8Array], { type: mimeType });
+  return URL.createObjectURL(blob);
+};
+
 export function formatarValorMonetario(valor: string): string {
   // Remove tudo que não for número
   const numero = valor.replace(/\D/g, '');
