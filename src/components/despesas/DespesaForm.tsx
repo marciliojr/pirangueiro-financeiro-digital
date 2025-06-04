@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { DespesasService, DespesaDTO, converterArquivoParaByteArray } from "@/services/despesas";
+import { DespesasService, DespesaDTO } from "@/services/despesas";
 import { CartoesService } from "@/services/cartoes";
 import { ContaDTO } from "@/services/contas";
 import { CategoriaDTO } from "@/services/categorias";
@@ -14,7 +14,7 @@ import { UppercaseInput } from "@/components/ui/uppercase-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { UppercaseTextarea } from "@/components/ui/uppercase-textarea";
-import { Upload, Loader2, FileText } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CategoriasService } from "@/services/categorias";
@@ -52,14 +52,11 @@ export function DespesaForm({ despesa, isOpen, onClose, onSubmit }: DespesaFormP
     categoriaId: despesa?.categoriaId || despesa?.categoria?.id,
     contaId: despesa?.contaId || despesa?.conta?.id,
     cartaoId: despesa?.cartaoId || undefined,
-    anexoUrl: despesa?.anexoUrl || "",
     observacao: despesa?.observacao || "",
     quantidadeParcelas: despesa?.quantidadeParcelas || 1,
     pago: despesa?.pago || false
   });
   const [valorFormatado, setValorFormatado] = useState(formData.valor ? formatarValorMonetario(formData.valor.toString()) : '0,00');
-  const [file, setFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
   
   const queryClient = useQueryClient();
 
@@ -158,14 +155,6 @@ export function DespesaForm({ despesa, isOpen, onClose, onSubmit }: DespesaFormP
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    
-    if (selectedFile) {
-      setFile(selectedFile);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -181,18 +170,11 @@ export function DespesaForm({ despesa, isOpen, onClose, onSubmit }: DespesaFormP
     }
     
     try {
-      setIsUploading(true);
       const updatedFormData = { ...formData };
       
       // Remove o campo quantidadeParcelas se for 1
       if (updatedFormData.quantidadeParcelas === 1) {
         delete updatedFormData.quantidadeParcelas;
-      }
-      
-      // Se um arquivo foi selecionado, converter para byte array
-      if (file) {
-        const anexoByteArray = await converterArquivoParaByteArray(file);
-        updatedFormData.anexo = anexoByteArray;
       }
       
       if (despesa?.id) {
@@ -202,12 +184,10 @@ export function DespesaForm({ despesa, isOpen, onClose, onSubmit }: DespesaFormP
       }
     } catch (error) {
       toast.error("Erro ao salvar despesa");
-    } finally {
-      setIsUploading(false);
     }
   };
 
-  const isSubmitting = createMutation.isPending || updateMutation.isPending || isUploading;
+  const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
   useEffect(() => {
     if (despesa) {
@@ -216,7 +196,6 @@ export function DespesaForm({ despesa, isOpen, onClose, onSubmit }: DespesaFormP
         categoriaId: despesa.categoria?.id || despesa.categoriaId,
         contaId: despesa.conta?.id || despesa.contaId,
         cartaoId: despesa.cartao?.id || despesa.cartaoId,
-        anexoUrl: despesa.anexoUrl || "",
       });
       // Formata o valor corretamente
       setValorFormatado(formatarValorMonetario((despesa.valor * 100).toFixed(0)));
@@ -415,40 +394,6 @@ export function DespesaForm({ despesa, isOpen, onClose, onSubmit }: DespesaFormP
                 </div>
               </div>
             )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="anexo">Anexo</Label>
-            <div className="flex items-center gap-2">
-              <Input
-                id="anexo"
-                name="anexo"
-                type="file"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-              <Label
-                htmlFor="anexo"
-                className="flex items-center gap-2 px-4 py-2 border rounded-md hover:bg-gray-50 cursor-pointer"
-              >
-                <Upload className="h-4 w-4" />
-                <span>Escolher arquivo</span>
-              </Label>
-              {file && <span className="text-sm text-gray-600">{file.name}</span>}
-              {!file && formData.anexoUrl && (
-                <div className="flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  <a 
-                    href={formData.anexoUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="text-blue-500 hover:underline text-sm"
-                  >
-                    Ver anexo atual
-                  </a>
-                </div>
-              )}
-            </div>
           </div>
 
           <div className="space-y-2">

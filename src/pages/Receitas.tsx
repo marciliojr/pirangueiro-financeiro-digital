@@ -6,7 +6,7 @@ import { CategoriasService } from "@/services/categorias";
 import { ContasService } from "@/services/contas";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
-import { Plus, Search, Edit, Trash, PiggyBank, FileText, FileDown, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Search, Edit, Trash, PiggyBank, FileDown, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { formatarMoeda, formatarData } from "@/services/api";
@@ -357,20 +357,19 @@ const Receitas = () => {
               <TableHead className="text-right">
                 <SortButton field="valor" label="Valor" className="p-0 h-8 hover:bg-transparent flex items-center justify-between w-full justify-end" />
               </TableHead>
-              <TableHead>Anexo</TableHead>
               <TableHead className="w-[100px]">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-10">
+                <TableCell colSpan={6} className="text-center py-10">
                   Carregando...
                 </TableCell>
               </TableRow>
             ) : receitas.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-10">
+                <TableCell colSpan={6} className="text-center py-10">
                   Nenhuma receita encontrada
                 </TableCell>
               </TableRow>
@@ -383,19 +382,6 @@ const Receitas = () => {
                   <TableCell>{getAccountName(receita)}</TableCell>
                   <TableCell className="text-right font-medium text-green-600">
                     {formatarMoeda(receita.valor)}
-                  </TableCell>
-                  <TableCell>
-                    {(receita.anexo || receita.anexoUrl) && (
-                      <a 
-                        href={receita.anexo || receita.anexoUrl} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        className="text-blue-500 hover:underline flex items-center"
-                      >
-                        <FileText className="h-4 w-4 mr-1" />
-                        <span className="sr-only">Ver anexo</span>
-                      </a>
-                    )}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">

@@ -7,7 +7,7 @@ import { ContasService } from "@/services/contas";
 import { CartoesService } from "@/services/cartoes";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
-import { Plus, Search, Edit, Trash, FileText, ArrowUpDown, ArrowUp, ArrowDown, FileDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Search, Edit, Trash, ArrowUpDown, ArrowUp, ArrowDown, FileDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -396,7 +396,6 @@ const Despesas = () => {
               <TableHead className="text-right">
                 <SortButton field="valor" label="Valor" className="justify-end" />
               </TableHead>
-              <TableHead className="w-[100px]">Anexo</TableHead>
               <TableHead className="w-[100px]">Parcelas</TableHead>
               <TableHead className="w-[120px]">Prestação Paga</TableHead>
               <TableHead className="w-[100px]">Ações</TableHead>
@@ -405,13 +404,13 @@ const Despesas = () => {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={10} className="text-center py-10">
+                <TableCell colSpan={9} className="text-center py-10">
                   Carregando...
                 </TableCell>
               </TableRow>
             ) : !despesasPage?.content || despesasPage.content.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} className="text-center py-10">
+                <TableCell colSpan={9} className="text-center py-10">
                   Nenhuma despesa encontrada
                 </TableCell>
               </TableRow>
@@ -425,19 +424,6 @@ const Despesas = () => {
                   <TableCell>{getCardName(despesa)}</TableCell>
                   <TableCell className="text-right font-medium text-red-600">
                     {formatarMoeda(despesa.valor)}
-                  </TableCell>
-                  <TableCell>
-                    {(despesa.anexo || despesa.anexoUrl) && (
-                      <a 
-                        href={despesa.anexo || despesa.anexoUrl} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        className="text-blue-500 hover:underline flex items-center"
-                      >
-                        <FileText className="h-4 w-4 mr-1" />
-                        <span className="sr-only">Ver anexo</span>
-                      </a>
-                    )}
                   </TableCell>
                   <TableCell>
                     {despesa.quantidadeParcelas && despesa.quantidadeParcelas > 1 ? (
