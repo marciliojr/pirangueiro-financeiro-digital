@@ -12,11 +12,11 @@ services:
       - "3000:80"
     environment:
       - NODE_ENV=production
-    depends_on:
-      - backend
     networks:
-      - pirangueiro-network
+      - default
     restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"  # Permite acesso ao backend no host
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.frontend.rule=Host(`localhost`)"
@@ -36,36 +36,17 @@ services:
     volumes:
       - .:/app
       - /app/node_modules
-    depends_on:
-      - backend
     networks:
-      - pirangueiro-network
+      - default
     restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"  # Permite acesso ao backend no host
     profiles:
       - dev
 
-  # Backend (assumindo que você já tem um docker-compose para ele)
-  # Se o backend está em outro docker-compose, você pode usar external_links
-  # ou criar uma rede externa
-  backend:
-    # Se você já tem um backend rodando, você pode comentar esta seção
-    # e usar external_links ou configurar uma rede externa
-    image: seu-backend-image:latest  # Substitua pelo nome da sua imagem do backend
-    container_name: pirangueiro-backend
-    ports:
-      - "8080:8080"
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8082
-    networks:
-      - pirangueiro-network
-    restart: unless-stopped
-    # Adicione suas configurações específicas do backend aqui
-
-networks:
-  pirangueiro-network:
-    driver: bridge
-    name: pirangueiro-network
+# Comentário: O backend está rodando externamente no localhost:8080
+# O frontend irá acessar o backend através do host.docker.internal
+# ou diretamente via localhost:8080 dependendo da configuração da aplicação
 
 # Se você quiser usar um backend externo já rodando:
 # networks:
