@@ -76,13 +76,10 @@ const Cartoes = () => {
 
   const openEditForm = async (cartao: CartaoDTO) => {
     try {
-      console.log('Cartão recebido para edição:', cartao);
       const cartaoAtualizado = await CartoesService.buscarPorId(cartao.id!);
-      console.log('Cartão atualizado recebido do backend:', cartaoAtualizado);
       setCurrentCartao(cartaoAtualizado);
       setIsFormOpen(true);
     } catch (error) {
-      console.error('Erro ao carregar dados do cartão:', error);
       toast.error("Erro ao carregar dados do cartão");
     }
   };

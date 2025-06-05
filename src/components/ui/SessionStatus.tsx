@@ -47,7 +47,6 @@ export const SessionStatus = () => {
         isValid: timeRemaining > 0
       });
     } catch (error) {
-      console.error('Erro ao carregar informações da sessão:', error);
       setSessionInfo(null);
     }
   };

@@ -45,7 +45,6 @@ const Configuracoes = () => {
       const status = await BackupService.obterStatus();
       setStatusBackup(status);
     } catch (error) {
-      console.error('Erro ao carregar status do backup:', error);
       toast.error("❌ Erro ao carregar status do backup");
     } finally {
       setCarregandoStatus(false);
@@ -73,7 +72,6 @@ const Configuracoes = () => {
     } catch (error) {
       setSplashOpen(false);
       toast.error("❌ Erro ao limpar os dados. Tente novamente.");
-      console.error("Erro ao limpar dados:", error);
     }
   };
 
@@ -94,7 +92,6 @@ const Configuracoes = () => {
       
       toast.success("✅ Backup baixado com sucesso!");
     } catch (error) {
-      console.error('Erro ao baixar backup:', error);
       toast.error("❌ Erro ao baixar backup. Tente novamente.");
     } finally {
       setOperacaoEmAndamento(false);
@@ -157,7 +154,6 @@ const Configuracoes = () => {
           setImportacaoAtiva(null);
         }
       } catch (error) {
-        console.error('Erro ao verificar status:', error);
         clearInterval(interval);
         setIntervalId(null);
         setImportacaoAtiva(null);
@@ -176,8 +172,6 @@ const Configuracoes = () => {
     try {
       setOperacaoEmAndamento(true);
       
-      console.log('=== INICIANDO IMPORTAÇÃO ===');
-      console.log('Arquivo selecionado:', {
         nome: arquivoSelecionado.name,
         tamanho: arquivoSelecionado.size,
         tipo: arquivoSelecionado.type,
@@ -186,8 +180,6 @@ const Configuracoes = () => {
       
       const resultado = await BackupService.iniciarImportacao(arquivoSelecionado);
       
-      console.log('=== RESULTADO DA IMPORTAÇÃO ===');
-      console.log('Resultado completo:', resultado);
       
       if (resultado.sucesso) {
         toast.success("✅ Importação iniciada! Acompanhe o progresso abaixo.");
@@ -203,14 +195,9 @@ const Configuracoes = () => {
         // Iniciar monitoramento
         iniciarMonitoramentoImportacao(resultado.requestId);
       } else {
-        console.error('Importação falhou - sucesso = false');
         toast.error("❌ Erro ao iniciar importação.");
       }
     } catch (error) {
-      console.error('=== ERRO NA IMPORTAÇÃO ===');
-      console.error('Erro completo:', error);
-      console.error('Tipo do erro:', typeof error);
-      console.error('Mensagem:', (error as Error).message);
       
       toast.error(`❌ ${(error as Error).message}`);
     } finally {

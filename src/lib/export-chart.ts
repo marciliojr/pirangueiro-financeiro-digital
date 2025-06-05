@@ -44,7 +44,6 @@ export const exportChart = async ({ elementId, filename, format }: ExportOptions
       pdf.save(`${filename}.pdf`);
     }
   } catch (error) {
-    console.error('Erro ao exportar gráfico:', error);
     throw error;
   }
 }; 

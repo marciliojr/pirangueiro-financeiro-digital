@@ -150,7 +150,6 @@ export function ReceitaForm({ receita, isOpen, onClose, onSubmit }: ReceitaFormP
         await createMutation.mutateAsync(receitaData);
       }
     } catch (error) {
-      console.error("Erro ao salvar receita:", error);
       toast.error("Erro ao salvar receita");
     }
   };

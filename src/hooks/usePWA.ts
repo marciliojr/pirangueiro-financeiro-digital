@@ -31,7 +31,6 @@ export const usePWA = () => {
       const event = e as BeforeInstallPromptEvent;
       setDeferredPrompt(event);
       setIsInstallable(true);
-      console.log('🎯 PWA installable detected');
     };
 
     // Listener para quando o app é instalado
@@ -39,7 +38,6 @@ export const usePWA = () => {
       setIsInstalled(true);
       setIsInstallable(false);
       setDeferredPrompt(null);
-      console.log('✅ PWA installed successfully');
     };
 
     // Listeners para status de conexão
@@ -62,7 +60,6 @@ export const usePWA = () => {
 
   const installApp = async () => {
     if (!deferredPrompt) {
-      console.log('❌ No install prompt available');
       return false;
     }
 
@@ -73,14 +70,11 @@ export const usePWA = () => {
       if (outcome === 'accepted') {
         setDeferredPrompt(null);
         setIsInstallable(false);
-        console.log('✅ User accepted PWA installation');
         return true;
       } else {
-        console.log('❌ User dismissed PWA installation');
         return false;
       }
     } catch (error) {
-      console.error('❌ Error installing PWA:', error);
       return false;
     }
   };

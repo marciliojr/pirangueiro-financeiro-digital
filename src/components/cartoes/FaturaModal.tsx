@@ -175,7 +175,6 @@ export function FaturaModal({ cartao, isOpen, onClose }: FaturaModalProps) {
       pdf.save(`fatura_${cartao.nome.toLowerCase().replace(/\s+/g, '_')}_${mesNome?.toLowerCase()}_${anoSelecionado}.pdf`);
       toast.success('Fatura exportada com sucesso!');
     } catch (error) {
-      console.error('Erro ao exportar:', error);
       toast.error('Erro ao exportar a fatura. Tente novamente.');
     } finally {
       setIsExporting(false);

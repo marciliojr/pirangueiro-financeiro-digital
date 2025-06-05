@@ -34,7 +34,6 @@ export function ContaForm({ conta, isOpen, onClose, onSubmit }: ContaFormProps) 
       onSubmit();
     },
     onError: (error: Error) => {
-      console.error("Erro ao criar conta:", error);
       toast.error(error.message || "Erro ao criar conta");
     },
   });
@@ -52,7 +51,6 @@ export function ContaForm({ conta, isOpen, onClose, onSubmit }: ContaFormProps) 
       onSubmit();
     },
     onError: (error: Error) => {
-      console.error("Erro ao atualizar conta:", error);
       toast.error(error.message || "Erro ao atualizar conta");
     },
   });
@@ -113,7 +111,6 @@ export function ContaForm({ conta, isOpen, onClose, onSubmit }: ContaFormProps) 
       }
     } catch (error) {
       // Erros já são tratados nas mutations
-      console.error("Erro ao salvar conta:", error);
     }
   };
 

@@ -14,7 +14,6 @@ export const NotificationService = {
       const response = await axios.get<Notificacao[]>(`${API_URL}/notificacoes/nao-lidas`);
       return response.data;
     } catch (error) {
-      console.error('Erro ao buscar notificações:', error);
       return [];
     }
   },
@@ -24,7 +23,6 @@ export const NotificationService = {
       await axios.patch(`${API_URL}/notificacoes/${id}/marcar-como-lida`);
       return true;
     } catch (error) {
-      console.error('Erro ao marcar notificação como lida:', error);
       return false;
     }
   }

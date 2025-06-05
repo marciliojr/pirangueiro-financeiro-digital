@@ -41,22 +41,10 @@ const TIPOS_IMAGEM_PERMITIDOS = ['image/jpeg', 'image/png', 'image/gif'];
 
 export const ContasService = {
   listar: async (): Promise<ContaDTO[]> => {
-    const response = await api.get("/contas");
+    const usuario = await UsuariosService.obterUsuarioAtual();
+    const response = await api.get(`/contas/usuario/${usuario.id}`);
     
-    // Debug temporário - verificar se imagens estão sendo retornadas
-    console.log('=== DEBUG BACKEND RESPONSE ===');
-    console.log('Total de contas retornadas:', response.data.length);
-    
-    response.data.forEach((conta: ContaDTO, index: number) => {
-      console.log(`Conta ${index + 1} (ID: ${conta.id}):`, {
-        nome: conta.nome,
-        tipo: conta.tipo,
-        temImagemLogo: !!(conta.imagemLogo && conta.imagemLogo.length > 0),
-        tamanhoImagemLogo: conta.imagemLogo?.length || 0,
-        tipoImagemLogo: typeof conta.imagemLogo,
-        primeiros10Bytes: conta.imagemLogo?.slice(0, 10) || null
-      });
-    });
+    // Debug information processed silently
     
     return response.data;
   },
@@ -86,86 +74,18 @@ export const ContasService = {
     }
   },
 
-  criar: async (conta: ContaDTO, imagem?: File): Promise<ContaDTO> => {
-    try {
-      const formData = new FormData();
-      
-      // Obter o usuário atual e incluir na conta
-      const usuarioAtual = await UsuariosService.obterUsuarioAtual();
-      
-      // Remover imagemLogo do objeto conta antes de enviar
-      const { imagemLogo, ...contaSemImagem } = conta;
-      
-      // Adicionar o usuário à conta
-      const contaComUsuario = {
-        ...contaSemImagem,
-        usuario: usuarioAtual
-      };
-      
-      // Adicionar os dados da conta como JSON
-      formData.append('conta', new Blob([JSON.stringify(contaComUsuario)], { type: 'application/json' }));
-      
-      // Adicionar a imagem se fornecida
-      if (imagem) {
-        ContasService.validarImagem(imagem);
-        formData.append('imagemLogo', imagem);
-      }
-
-      const response = await api.post("/contas", formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-
-      return response.data;
-    } catch (error: unknown) {
-      console.error('Erro ao criar conta:', error);
-      if (error instanceof Error) {
-        throw new Error(error.message);
-      }
-      throw new Error('Erro ao criar conta. Verifique os dados e tente novamente.');
-    }
+  criar: async (conta: ContaDTO): Promise<ContaDTO> => {
+    const usuario = await UsuariosService.obterUsuarioAtual();
+    const contaComUsuario = { ...conta, usuario: { id: usuario.id } };
+    const response = await api.post('/contas', contaComUsuario);
+    return response.data;
   },
 
-  atualizar: async (id: number, conta: ContaDTO, imagem?: File): Promise<ContaDTO> => {
-    try {
-      const formData = new FormData();
-      
-      // Obter o usuário atual e incluir na conta
-      const usuarioAtual = await UsuariosService.obterUsuarioAtual();
-      
-      // Remover imagemLogo do objeto conta antes de enviar
-      const { imagemLogo, ...contaSemImagem } = conta;
-      
-      // Adicionar o usuário à conta
-      const contaComUsuario = {
-        ...contaSemImagem,
-        usuario: usuarioAtual
-      };
-      
-      // Adicionar os dados da conta como JSON
-      formData.append('conta', new Blob([JSON.stringify(contaComUsuario)], { type: 'application/json' }));
-      
-      // Adicionar a imagem se fornecida
-      if (imagem) {
-        ContasService.validarImagem(imagem);
-        formData.append('imagemLogo', imagem);
-      }
-
-      const response = await api.put(`/contas/${id}`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-
-      return response.data;
-    } catch (error: unknown) {
-      console.error('Erro ao atualizar conta:', error);
-      if (error instanceof Error) {
-        throw new Error(error.message);
-      }
-      throw new Error('Erro ao atualizar conta. Verifique os dados e tente novamente.');
-    }
+  atualizar: async (id: number, conta: ContaDTO): Promise<ContaDTO> => {
+    const usuario = await UsuariosService.obterUsuarioAtual();
+    const contaComUsuario = { ...conta, usuario: { id: usuario.id } };
+    const response = await api.put(`/contas/${id}`, contaComUsuario);
+    return response.data;
   },
 
   excluir: async (id: number): Promise<void> => {

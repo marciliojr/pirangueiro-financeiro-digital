@@ -23,40 +23,28 @@ export const LoginModal: React.FC<LoginModalProps> = ({ open, onOpenChange }) =>
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log("🔐 MODAL: Tentativa de login iniciada");
-    console.log("👤 MODAL: Usuário:", loginForm.username);
-    console.log("🔐 MODAL: Senha:", loginForm.password);
     
     if (!loginForm.username || !loginForm.password) {
-      console.log("❌ MODAL: Campos vazios");
       toast.error("Por favor, preencha todos os campos");
       return;
     }
 
     setIsLoginLoading(true);
-    console.log("⏳ MODAL: Iniciando loading...");
 
     try {
-      console.log("🔄 MODAL: Chamando função login do context...");
       const success = await login(loginForm.username, loginForm.password);
       
-      console.log("🔍 MODAL: Resultado do login:", success);
       
       if (success) {
-        console.log("✅ MODAL: Login bem-sucedido!");
         toast.success("Login realizado com sucesso!");
         onOpenChange(false);
         setLoginForm({ username: '', password: '' });
       } else {
-        console.log("❌ MODAL: Login falhou");
         toast.error("Usuário ou senha incorretos");
       }
     } catch (error) {
-      console.error("❌ MODAL: Erro durante login:", error);
-      console.error("❌ MODAL: Stack trace:", error.stack);
       toast.error("Erro ao tentar fazer login. Tente novamente.");
     } finally {
-      console.log("🏁 MODAL: Finalizando loading...");
       setIsLoginLoading(false);
     }
   };
@@ -87,7 +75,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({ open, onOpenChange }) =>
       onOpenChange(false);
       setUpdateForm({ username: '', password: '', confirmPassword: '' });
     } catch (error) {
-      console.error("Erro ao atualizar usuário:", error);
       toast.error("Erro ao atualizar usuário. Tente novamente.");
     } finally {
       setIsUpdateLoading(false);

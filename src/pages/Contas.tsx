@@ -40,7 +40,6 @@ const Contas = () => {
             const saldo = await ContasService.buscarSaldo(conta.id);
             saldosTemp[conta.id] = saldo;
           } catch (error) {
-            console.error(`Erro ao buscar saldo da conta ${conta.id}:`, error);
             // Criar um objeto SaldoContaDTO vazio em caso de erro
             saldosTemp[conta.id] = {
               contaId: conta.id,
@@ -69,11 +68,9 @@ const Contas = () => {
     }
 
     try {
-      console.log(`Processando imagem da conta ${conta.id}...`);
       
       // Verificar se é um array válido
       if (!Array.isArray(conta.imagemLogo)) {
-        console.error(`Conta ${conta.id}: imagemLogo não é um array:`, typeof conta.imagemLogo);
         return null;
       }
 
@@ -108,7 +105,6 @@ const Contas = () => {
           const { bytes, tipo } = abordagem();
           
           if (bytes.length === 0) {
-            console.warn(`Conta ${conta.id}: Array de bytes vazio (${tipo})`);
             continue;
           }
 
@@ -126,18 +122,14 @@ const Contas = () => {
           
           if (blob.size > 0) {
             const url = URL.createObjectURL(blob);
-            console.log(`✅ Conta ${conta.id}: Sucesso com abordagem ${tipo} - ${mimeType}, ${blob.size} bytes`);
             return url;
           }
         } catch (error) {
-          console.log(`Conta ${conta.id}: Falha na abordagem ${abordagem.name}:`, error);
         }
       }
 
-      console.error(`❌ Conta ${conta.id}: Todas as abordagens falharam`);
       return null;
     } catch (error) {
-      console.error(`Erro geral ao processar imagem da conta ${conta.id}:`, error);
       return null;
     }
   };
@@ -147,10 +139,8 @@ const Contas = () => {
     const newImageUrls: Record<number, string> = {};
     
     // Debug temporário para verificar o que está chegando do backend
-    console.log('Processando contas para imagens:', contas.length);
     
     contas.forEach(conta => {
-      console.log(`Conta ${conta.id}:`, {
         temImagem: !!(conta.imagemLogo && conta.imagemLogo.length > 0),
         tamanhoImagem: conta.imagemLogo?.length || 0,
         primeiros4Bytes: conta.imagemLogo?.slice(0, 4) || []
@@ -164,7 +154,6 @@ const Contas = () => {
       }
     });
 
-    console.log('URLs de imagens criadas:', Object.keys(newImageUrls).length);
     setImageUrls(newImageUrls);
 
     // Cleanup function
@@ -293,10 +282,7 @@ const Contas = () => {
                           <AvatarImage 
                             src={imageUrls[conta.id]}
                             alt={conta.nome}
-                            onLoad={() => console.log(`✅ Imagem carregada com sucesso para conta ${conta.id}`)}
                             onError={(e) => {
-                              console.error(`❌ Erro ao carregar imagem da conta ${conta.id}:`, e);
-                              console.log(`URL que falhou: ${imageUrls[conta.id!]}`);
                             }}
                           />
                         ) : (

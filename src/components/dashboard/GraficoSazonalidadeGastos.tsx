@@ -28,7 +28,6 @@ export const GraficoSazonalidadeGastos = ({ data = [] }) => {
         format
       });
     } catch (error) {
-      console.error('Erro ao exportar:', error);
     } finally {
       setExportando(false);
     }

@@ -69,7 +69,6 @@ export function GraficoDespesasCartao({ dados, onMesesChange, mesesAtual }: Graf
                 format
             });
         } catch (error) {
-            console.error('Erro ao exportar:', error);
         } finally {
             setExportando(false);
         }

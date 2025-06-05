@@ -179,7 +179,6 @@ export default function Relatorios() {
       }, 1000);
     } catch (error) {
       setExportandoPdf(false);
-      console.error('Erro ao gerar PDF:', error);
       toast.error('Erro ao gerar relatório PDF');
     }
   };

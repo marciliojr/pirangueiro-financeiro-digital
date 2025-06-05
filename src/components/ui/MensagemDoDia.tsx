@@ -15,7 +15,6 @@ export const MensagemDoDia = () => {
       const mensagemDia = await obterMensagemDia();
       setMensagem(mensagemDia);
     } catch (error) {
-      console.error('Erro ao buscar mensagem do dia:', error);
       setMensagem('Não foi possível carregar a mensagem do dia.');
     } finally {
       setLoading(false);

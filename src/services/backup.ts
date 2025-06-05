@@ -107,7 +107,6 @@ export const BackupService = {
       const response = await api.get('/backup/status');
       return response.data;
     } catch (error) {
-      console.error('Erro ao obter status do backup:', error);
       throw new Error('Erro ao obter status do backup');
     }
   },
@@ -123,7 +122,6 @@ export const BackupService = {
       });
       return response.data;
     } catch (error) {
-      console.error('Erro ao exportar backup:', error);
       throw new Error('Erro ao exportar backup');
     }
   },
@@ -134,7 +132,6 @@ export const BackupService = {
       const response = await api.get('/backup/info');
       return response.data;
     } catch (error) {
-      console.error('Erro ao obter informações do backup:', error);
       throw new Error('Erro ao obter informações do backup');
     }
   },
@@ -159,12 +156,6 @@ export const BackupService = {
         throw new Error('Arquivo muito grande (máximo 50MB)');
       }
       
-      console.log('Iniciando upload do arquivo:', {
-        nome: arquivo.name,
-        tamanho: arquivo.size,
-        tipo: arquivo.type
-      });
-      
       const formData = new FormData();
       formData.append('arquivo', arquivo);
       
@@ -175,25 +166,12 @@ export const BackupService = {
         timeout: 120000, // 2 minutos de timeout
         onUploadProgress: (progressEvent) => {
           const percentCompleted = Math.round((progressEvent.loaded * 100) / (progressEvent.total || 1));
-          console.log('Upload progress:', percentCompleted + '%');
         }
       });
       
-      console.log('Resposta do servidor:', response.data);
       return response.data;
     } catch (error: unknown) {
       const axiosError = error as AxiosErrorType;
-      console.error('Erro detalhado ao iniciar importação:', {
-        message: axiosError.message,
-        response: axiosError.response?.data,
-        status: axiosError.response?.status,
-        statusText: axiosError.response?.statusText,
-        config: {
-          url: axiosError.config?.url,
-          method: axiosError.config?.method,
-          timeout: axiosError.config?.timeout
-        }
-      });
       
       // Tratamento específico de erros
       if (axiosError.response) {
@@ -231,7 +209,6 @@ export const BackupService = {
       const response = await api.get(`/backup/import/status/${requestId}`);
       return response.data;
     } catch (error) {
-      console.error('Erro ao verificar status da importação:', error);
       throw new Error('Erro ao verificar status da importação');
     }
   },
@@ -242,7 +219,6 @@ export const BackupService = {
       const response = await api.get('/backup/import/history');
       return response.data;
     } catch (error) {
-      console.error('Erro ao obter histórico:', error);
       throw new Error('Erro ao obter histórico');
     }
   },
@@ -253,7 +229,6 @@ export const BackupService = {
       const response = await api.get('/backup/import/history/all');
       return response.data;
     } catch (error) {
-      console.error('Erro ao obter todas as importações:', error);
       throw new Error('Erro ao obter todas as importações');
     }
   },
@@ -264,7 +239,6 @@ export const BackupService = {
       const response = await api.delete('/backup/import/cleanup');
       return response.data;
     } catch (error) {
-      console.error('Erro ao limpar status antigos:', error);
       throw new Error('Erro ao limpar status antigos');
     }
   },
@@ -275,7 +249,6 @@ export const BackupService = {
       const response = await api.delete('/backup/clear');
       return response.data;
     } catch (error) {
-      console.error('Erro ao limpar sistema:', error);
       throw new Error('Erro ao limpar sistema');
     }
   }

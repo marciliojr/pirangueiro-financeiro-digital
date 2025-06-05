@@ -49,7 +49,6 @@ export function GraficoTendenciaGastos({ dados }: GraficoTendenciaGastosProps) {
         format
       });
     } catch (error) {
-      console.error('Erro ao exportar:', error);
     } finally {
       setExportando(false);
     }

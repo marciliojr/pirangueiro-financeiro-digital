@@ -10,7 +10,6 @@ export const AdminService = {
       });
       return response.data;
     } catch (error) {
-      console.error('Erro ao limpar base de dados:', error);
       throw new Error('Erro ao limpar base de dados');
     }
   }

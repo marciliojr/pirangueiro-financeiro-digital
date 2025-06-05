@@ -16,7 +16,6 @@ export const DebugUsuarios: React.FC = () => {
   const carregarUsuarios = async () => {
     setIsLoading(true);
     try {
-      console.log("🔄 Carregando usuários da base...");
       const users = await UsuariosService.listar();
       setUsuarios(users);
       
@@ -25,7 +24,6 @@ export const DebugUsuarios: React.FC = () => {
       
       toast.success(`${users.length} usuários carregados`);
     } catch (error) {
-      console.error("Erro ao carregar usuários:", error);
       toast.error("Erro ao carregar usuários");
     } finally {
       setIsLoading(false);
@@ -40,7 +38,6 @@ export const DebugUsuarios: React.FC = () => {
 
     setIsLoading(true);
     try {
-      console.log("🧪 Testando autenticação:", testeNome);
       const resultado = await UsuariosService.autenticar(testeNome, testeSenha);
       
       if (resultado) {
@@ -51,7 +48,6 @@ export const DebugUsuarios: React.FC = () => {
         toast.error("Credenciais inválidas");
       }
     } catch (error) {
-      console.error("Erro no teste:", error);
       setTesteResult(`❌ Erro: ${error}`);
       toast.error("Erro no teste");
     } finally {

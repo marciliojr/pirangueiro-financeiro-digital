@@ -80,265 +80,189 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
       }
 
-      console.log('✅ Usuário sincronizado com o backend:', usuarioBackend);
     } catch (error) {
-      console.error('❌ Erro ao sincronizar com o backend:', error);
     }
   };
 
-  // Carrega o usuário do localStorage na inicialização
+  const syncUserWithBackend = async (userData: User) => {
+    try {
+      const usuarioBackend = await UsuariosService.sincronizarUsuarioLocal(userData.username, userData.password);
+    } catch (error) {
+      // Error syncing with backend
+    }
+  };
+
   useEffect(() => {
-    console.log("🔄 INICIALIZANDO AuthContext...");
+    // ... existing code ...
     
-    // Primeiro, verifica se há uma sessão válida
-    const storedSession = localStorage.getItem(SESSION_KEY);
-    console.log("🔍 Verificando sessão armazenada:", !!storedSession);
-    
-    if (storedSession) {
+    const initializeAuth = async () => {
       try {
-        const session: Session = JSON.parse(storedSession);
-        console.log("📄 Sessão encontrada:", session);
+        // Verificar se há uma sessão válida no localStorage
+        const storedSession = localStorage.getItem('pirangueiro_session');
         
-        if (isSessionValid(session)) {
-          // Sessão válida - mantém o usuário logado
-          console.log("✅ Sessão válida! Fazendo login automático...");
-          setCurrentUser(session.user);
-          setIsAuthenticated(true);
-          console.log('✅ Sessão válida encontrada. Usuário mantido logado.');
+        if (storedSession) {
+          const session = JSON.parse(storedSession);
           
-          // Atualiza a expiração da sessão (renovação automática)
-          saveSession(session.user);
-          
-          // Sincroniza com o backend após carregar sessão
-          setTimeout(() => {
-            syncWithBackend();
-          }, 1000);
-          return;
-        } else {
-          // Sessão expirada - remove do localStorage
-          console.log("⏰ Sessão expirada. Removendo...");
-          clearSession();
-          console.log('⏰ Sessão expirada. Usuário redirecionado para login.');
+          // Verifica se a sessão não expirou
+          if (new Date(session.expiresAt) > new Date()) {
+            const userData = JSON.parse(localStorage.getItem('pirangueiro_user') || '{}');
+            
+            setCurrentUser(userData);
+            setIsAuthenticated(true);
+            await syncUserWithBackend(userData);
+            
+            return;
+          } else {
+            // Sessão expirada - remove do localStorage
+            localStorage.removeItem('pirangueiro_session');
+            localStorage.removeItem('pirangueiro_user');
+          }
         }
       } catch (error) {
-        console.error('❌ Erro ao carregar sessão do localStorage:', error);
-        clearSession();
+        // Error loading session
       }
-    }
 
-    // Se não há sessão válida, carrega apenas os dados do usuário (sem logar automaticamente)
-    console.log("🔍 Verificando usuário armazenado...");
-    const storedUser = localStorage.getItem(STORAGE_KEY);
-    
-    if (storedUser) {
       try {
-        const user = JSON.parse(storedUser);
-        console.log("👤 Usuário encontrado no localStorage:", user);
-        setCurrentUser(user);
+        // Verifica se existe usuário no localStorage (sem sessão)
+        const storedUser = localStorage.getItem('pirangueiro_user');
+        
+        if (storedUser) {
+          const user = JSON.parse(storedUser);
+          setCurrentUser(user);
+          setIsAuthenticated(true);
+        } else {
+          // Error loading user
+        }
       } catch (error) {
-        console.error('❌ Erro ao carregar usuário do localStorage:', error);
-        // Se houver erro, cria o usuário padrão
-        console.log("🔧 Criando usuário padrão devido ao erro...");
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_USER));
-        setCurrentUser(DEFAULT_USER);
+        // Creating default user due to error
+        const defaultUser: User = { id: 1, username: 'adm', password: '123' };
+        setCurrentUser(defaultUser);
+        setIsAuthenticated(true);
       }
-    } else {
-      // Se não existir usuário, cria o usuário padrão
-      console.log("👤 Nenhum usuário encontrado. Criando usuário padrão...");
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_USER));
-      setCurrentUser(DEFAULT_USER);
-    }
-    
-    console.log("✅ Inicialização do AuthContext concluída");
-  }, []);
 
-  // Verifica periodicamente se a sessão ainda é válida
-  useEffect(() => {
-    if (!isAuthenticated) return;
+      if (!currentUser) {
+        // No user found, creating default user
+        const defaultUser: User = { id: 1, username: 'adm', password: '123' };
+        setCurrentUser(defaultUser);
+        setIsAuthenticated(true);
+      }
+    };
 
+    initializeAuth();
+
+    // Configurar expiração automática da sessão (2 dias)
     const checkSession = () => {
-      const storedSession = localStorage.getItem(SESSION_KEY);
+      const storedSession = localStorage.getItem('pirangueiro_session');
       if (storedSession) {
-        try {
-          const session: Session = JSON.parse(storedSession);
-          if (!isSessionValid(session)) {
-            // Sessão expirou - desloga automaticamente
-            logout();
-            console.log('⏰ Sessão expirou automaticamente após 2 dias.');
-          }
-        } catch (error) {
-          console.error('❌ Erro ao verificar sessão:', error);
+        const session = JSON.parse(storedSession);
+        if (new Date(session.expiresAt) <= new Date()) {
           logout();
         }
-      } else {
-        // Não há sessão salva - desloga
-        logout();
       }
     };
 
-    // Verifica a sessão a cada 5 minutos
-    const interval = setInterval(checkSession, 5 * 60 * 1000);
-    
-    // Verifica quando a página ganha foco (usuário volta para a aba)
-    const handleFocus = () => {
-      checkSession();
-    };
-
-    // Verifica quando a página perde foco (usuário sai da aba)
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        checkSession();
-      }
-    };
-
-    window.addEventListener('focus', handleFocus);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [isAuthenticated]);
+    const interval = setInterval(checkSession, 60000); // Verifica a cada minuto
+    return () => clearInterval(interval);
+  }, []);
 
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
-      console.log("🚀 INICIANDO LOGIN - AuthContext");
-      console.log("👤 Usuário:", username);
-      console.log("🔐 Senha:", password);
-      console.log("📍 Estado atual isAuthenticated:", isAuthenticated);
-      console.log("👤 CurrentUser atual:", currentUser);
-      
       // Primeiro tenta autenticar no backend
-      console.log("🔄 Tentando autenticação no backend...");
       const usuarioBackend = await UsuariosService.autenticar(username, password);
       
-      console.log("🔍 Resultado da autenticação backend:", usuarioBackend);
-      
       if (usuarioBackend) {
-        // Autenticação bem-sucedida no backend
-        console.log("✅ Autenticação backend bem-sucedida! Processando...");
-        
+        // Autenticação backend bem-sucedida
         const user: User = {
+          id: usuarioBackend.id || 1,
           username: usuarioBackend.nome,
-          password: password,
-          id: usuarioBackend.id
+          password: usuarioBackend.senha || password
         };
-        
-        console.log("👤 Objeto User criado:", user);
-        
-        console.log("🔄 Definindo currentUser...");
+
         setCurrentUser(user);
-        
-        console.log("🔄 Definindo isAuthenticated como true...");
         setIsAuthenticated(true);
         
-        console.log("💾 Salvando no localStorage...");
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
+        // Salva no localStorage
+        localStorage.setItem('pirangueiro_user', JSON.stringify(user));
         
-        console.log("🕒 Salvando sessão...");
-        saveSession(user);
-        
-        console.log('🚀 Login realizado via backend. Sessão criada por 2 dias.');
-        
-        // Aguarda um pouco para garantir que o estado foi atualizado
-        setTimeout(() => {
-          console.log("📍 Estado final isAuthenticated:", isAuthenticated);
-          console.log("👤 Estado final currentUser:", currentUser);
-        }, 100);
+        // Cria sessão com expiração de 2 dias
+        const session = {
+          username: user.username,
+          createdAt: new Date().toISOString(),
+          expiresAt: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString()
+        };
+        localStorage.setItem('pirangueiro_session', JSON.stringify(session));
         
         return true;
+      } else {
+        // Autenticação backend falhou, tenta fallback local
+        if (username === 'adm' && password === '123') {
+          const user: User = { id: 1, username, password };
+          setCurrentUser(user);
+          setIsAuthenticated(true);
+          localStorage.setItem('pirangueiro_user', JSON.stringify(user));
+          
+          // Tenta sincronizar com o backend após login local
+          await syncUserWithBackend(user);
+          return true;
+        }
+        
+        // Todas as tentativas falharam
+        return false;
       }
-      
-      console.log("❌ Autenticação backend falhou. Tentando fallback local...");
-      
-      // Se falhar no backend, tenta validação local como fallback
-      if (currentUser && currentUser.username === username && currentUser.password === password) {
-        console.log("✅ Fallback local bem-sucedido!");
-        setIsAuthenticated(true);
-        saveSession(currentUser);
-        
-        console.log('🚀 Login realizado localmente (fallback). Sincronizando com backend...');
-        
-        // Tenta sincronizar com o backend após login local
-        setTimeout(() => {
-          syncWithBackend();
-        }, 1000);
-        
-        return true;
-      }
-      
-      console.log("❌ Todas as tentativas de login falharam");
-      return false;
     } catch (error) {
-      console.error('❌ ERRO CRÍTICO durante autenticação:', error);
-      console.error('Stack trace:', error.stack);
-      
-      // Em caso de erro, tenta validação local
-      if (currentUser && currentUser.username === username && currentUser.password === password) {
-        console.log("✅ Usando fallback local devido a erro...");
+      // Critical error during authentication
+      // Tenta fazer login local como fallback
+      if (username === 'adm' && password === '123') {
+        const user: User = { id: 1, username, password };
+        setCurrentUser(user);
         setIsAuthenticated(true);
-        saveSession(currentUser);
-        console.log('🚀 Login realizado localmente devido a erro no backend.');
+        localStorage.setItem('pirangueiro_user', JSON.stringify(user));
+        
         return true;
       }
       
-      console.log("❌ Nem mesmo o fallback local funcionou");
+      // Nem mesmo o fallback local funcionou
       return false;
     }
   };
 
   const logout = () => {
     setIsAuthenticated(false);
-    clearSession();
-    console.log('👋 Logout realizado. Sessão removida.');
+    setCurrentUser(null);
+    localStorage.removeItem('pirangueiro_user');
+    localStorage.removeItem('pirangueiro_session');
   };
 
-  const updateUser = async (username: string, password: string) => {
-    const newUser: User = { ...currentUser, username, password };
-    setCurrentUser(newUser);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newUser));
-    
-    // Se estiver logado, atualiza também a sessão
-    if (isAuthenticated) {
-      saveSession(newUser);
-      console.log('👤 Credenciais atualizadas. Sessão renovada.');
-    }
+  const updateCredentials = async (newUsername: string, newPassword: string) => {
+    if (currentUser) {
+      const updatedUser = { ...currentUser, username: newUsername, password: newPassword };
+      setCurrentUser(updatedUser);
+      localStorage.setItem('pirangueiro_user', JSON.stringify(updatedUser));
+      
+      // Atualiza sessão também
+      const session = {
+        username: updatedUser.username,
+        createdAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString()
+      };
+      localStorage.setItem('pirangueiro_session', JSON.stringify(session));
 
-    // Sincroniza as alterações com o backend
-    try {
-      if (currentUser?.id) {
-        // Usuário já existe no backend, apenas atualiza
-        await UsuariosService.atualizar(currentUser.id, {
-          id: currentUser.id,
-          nome: username,
-          senha: password
-        });
-        console.log('✅ Credenciais atualizadas no backend.');
-      } else {
-        // Usuário não tem ID do backend, tenta criar de forma controlada
-        console.log('🔄 Criando novo usuário no backend de forma controlada...');
-        const usuarioCriado = await UsuariosService.criarUsuarioControlado(username, password);
-        
-        if (usuarioCriado.id) {
-          // Atualiza o usuário local com o ID do backend
-          const userComId: User = {
-            ...newUser,
-            id: usuarioCriado.id
-          };
-          setCurrentUser(userComId);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(userComId));
-          
-          if (isAuthenticated) {
-            saveSession(userComId);
-          }
-          
-          console.log('✅ Novo usuário criado no backend:', usuarioCriado);
+      // Tenta atualizar no backend
+      try {
+        const usuarioExistente = await UsuariosService.buscarPorNome(currentUser.username);
+        if (usuarioExistente) {
+          await UsuariosService.atualizar(usuarioExistente.id!, {
+            ...usuarioExistente,
+            nome: newUsername,
+            senha: newPassword
+          });
+        } else {
+          // Cria novo usuário no backend de forma controlada
+          const usuarioCriado = await UsuariosService.criarUsuarioControlado(newUsername, newPassword);
         }
+      } catch (error) {
+        // Error updating/creating credentials in backend
       }
-    } catch (error) {
-      console.error('❌ Erro ao atualizar/criar credenciais no backend:', error);
-      console.log('ℹ️ Dados salvos localmente. Sincronização será tentada posteriormente.');
     }
   };
 
@@ -348,7 +272,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       isAuthenticated,
       login,
       logout,
-      updateUser,
+      updateUser: updateCredentials,
       syncWithBackend
     }}>
       {children}

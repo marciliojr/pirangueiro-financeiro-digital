@@ -47,7 +47,6 @@ export default function GraficoSaudeFinanceira({ dados }: GraficoSaudeFinanceira
         format
       });
     } catch (error) {
-      console.error('Erro ao exportar:', error);
     } finally {
       setExportando(false);
     }

@@ -67,7 +67,6 @@ export function useGraficoReceitasDespesas(): UseGraficoReceitasDespesasReturn {
             setPeriodo(resposta.periodo);
         } catch (error) {
             setErro('Erro ao carregar dados. Tente novamente.');
-            console.error('Erro ao buscar dados:', error);
         } finally {
             setLoading(false);
         }

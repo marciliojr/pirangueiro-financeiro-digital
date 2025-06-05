@@ -31,7 +31,6 @@ export const LoginScreen: React.FC = () => {
         toast.error("Usuário ou senha incorretos");
       }
     } catch (error) {
-      console.error("Erro durante o login:", error);
       toast.error("Erro ao tentar fazer login. Tente novamente.");
     } finally {
       setIsLoading(false);

@@ -104,13 +104,6 @@ const Dashboard = () => {
   const saldoTotal = totalReceitasAcumulado - totalDespesasAcumulado;
 
   // Debug - verificar valores
-  console.log("Debug Dashboard - Valores:");
-  console.log("Total Receitas Mensal:", totalReceitas);
-  console.log("Total Despesas Mensal:", totalDespesas);
-  console.log("Saldo Mensal:", saldo);
-  console.log("Total Receitas Acumulado (endpoint):", totalReceitasAcumulado);
-  console.log("Total Despesas Acumulado (endpoint):", totalDespesasAcumulado);
-  console.log("Saldo Total:", saldoTotal);
 
   // Se os dados estiverem carregando, você pode mostrar um indicador de carregamento
   if (isLoadingReceitas || isLoadingDespesas || isLoadingGrafico || isLoadingSaudeFinanceira || isLoadingDespesasCartao || isLoadingSazonalidade || isLoadingTendenciaGastos) {

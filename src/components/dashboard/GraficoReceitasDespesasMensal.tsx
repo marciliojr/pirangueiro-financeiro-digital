@@ -87,34 +87,27 @@ const formatarMes = (monthString: string): string => {
             year: 'numeric'
         });
     } catch (error) {
-        console.error('Erro ao formatar mês:', error);
         return 'Mês inválido';
     }
 };
 
 const formatarMesCompleto = (monthString: string): string => {
     try {
-        console.log('formatarMesCompleto - entrada:', monthString);
         
         if (!monthString || typeof monthString !== 'string') {
-            console.log('formatarMesCompleto - entrada inválida');
             return 'Mês inválido';
         }
         
         const [year, month] = monthString.split('-');
-        console.log('formatarMesCompleto - year:', year, 'month:', month);
         
         if (!year || !month) {
-            console.log('formatarMesCompleto - year ou month inválido');
             return 'Mês inválido';
         }
         
         const date = new Date(parseInt(year), parseInt(month) - 1);
-        console.log('formatarMesCompleto - date criado:', date);
         
         // Verificar se a data é válida
         if (isNaN(date.getTime())) {
-            console.log('formatarMesCompleto - data inválida');
             return 'Mês inválido';
         }
         
@@ -122,11 +115,9 @@ const formatarMesCompleto = (monthString: string): string => {
             month: 'long',
             year: 'numeric'
         });
-        console.log('formatarMesCompleto - resultado:', resultado);
         
         return resultado;
     } catch (error) {
-        console.error('Erro ao formatar mês completo:', error);
         return 'Mês inválido';
     }
 };
@@ -143,7 +134,6 @@ const CustomTooltip = ({ active, payload, label }: {
 }) => {
     if (active && payload && payload.length) {
         // Log temporário para debug
-        console.log('CustomTooltip - label recebido:', label, 'tipo:', typeof label);
         
         return (
             <div className="bg-white p-4 border border-gray-200 rounded-lg shadow-lg">
@@ -230,7 +220,6 @@ export function GraficoReceitasDespesasMensal({ className }: GraficoReceitasDesp
             setPeriodo(resposta.periodo);
         } catch (error) {
             setErro('Erro ao carregar dados. Tente novamente.');
-            console.error('Erro ao buscar dados:', error);
         } finally {
             setLoading(false);
         }
@@ -295,7 +284,6 @@ export function GraficoReceitasDespesasMensal({ className }: GraficoReceitasDesp
                 pdf.save('receitas-despesas.pdf');
             }
         } catch (error) {
-            console.error('Erro ao fazer download:', error);
         }
     };
 

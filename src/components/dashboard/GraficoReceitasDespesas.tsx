@@ -90,7 +90,6 @@ const formatarMoedaSegura = (valor: unknown): string => {
         }
         return formatarMoeda(numeroValido);
     } catch (error) {
-        console.error('Erro ao formatar moeda:', error, 'Valor:', valor);
         return 'R$ 0,00';
     }
 };
@@ -199,7 +198,6 @@ export function GraficoReceitasDespesas({
                 format
             });
         } catch (error) {
-            console.error('Erro ao exportar:', error);
         } finally {
             setExportando(false);
         }

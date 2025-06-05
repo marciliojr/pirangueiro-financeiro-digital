@@ -115,7 +115,6 @@ export const GraficosService = {
                 saldo: response.data.saldo || 0
             };
         } catch (error) {
-            console.error("Erro ao buscar dados do gráfico:", error);
             // Retornar estrutura vazia em caso de erro
             return {
                 mes,
@@ -167,7 +166,6 @@ export const GraficosService = {
             
             return response.data;
         } catch (error) {
-            console.error("Erro ao buscar dados do gráfico mensal:", error);
             return {
                 dados: [],
                 periodo: {
@@ -183,7 +181,6 @@ export const GraficosService = {
             const response = await api.get(`/graficos/dashboard-financeiro?mes=${mes}&ano=${ano}`);
             return response.data;
         } catch (error) {
-            console.error("Erro ao buscar dados do dashboard financeiro:", error);
             return {
                 saldoAtual: 0,
                 taxaEconomiaMensal: 0,
@@ -197,7 +194,6 @@ export const GraficosService = {
             const response = await api.get(`/graficos/despesas-por-cartao?mesesAtras=${mesesAtras}`);
             return response.data;
         } catch (error) {
-            console.error("Erro ao buscar despesas por cartão:", error);
             return {
                 meses: [],
                 series: [],
@@ -238,7 +234,6 @@ export const GraficosService = {
                 valor: response.data.mediasGastos[index] || 0
             }));
         } catch (error) {
-            console.error("Erro ao buscar sazonalidade de gastos:", error);
             return [];
         }
     },
@@ -248,7 +243,6 @@ export const GraficosService = {
             const response = await api.get('/graficos/tendencia-gastos');
             return response.data;
         } catch (error) {
-            console.error("Erro ao buscar tendência de gastos:", error);
             return {
                 meses: [],
                 valores: [],
