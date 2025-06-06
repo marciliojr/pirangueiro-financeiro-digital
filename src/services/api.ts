@@ -8,8 +8,19 @@ interface ErroResponse {
   timestamp: string;
 }
 
+// Configurar base URL baseada no ambiente
+const getBaseURL = () => {
+  // No Docker (produção), sempre usar URL relativa para aproveitar o proxy do nginx
+  // Em desenvolvimento local, usar URL absoluta para o backend
+  if (import.meta.env.PROD || window.location.port === '8082') {
+    return "/api";
+  }
+  // Se for desenvolvimento, usar URL absoluta para o backend
+  return import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+};
+
 export const api = axios.create({
-  baseURL: "/api",
+  baseURL: getBaseURL(),
   headers: {
     "Content-Type": "application/json",
   },

@@ -125,6 +125,7 @@ const Contas = () => {
             return url;
           }
         } catch (error) {
+          // Ignora erro de processamento individual da abordagem
         }
       }
 
@@ -138,14 +139,7 @@ const Contas = () => {
   useEffect(() => {
     const newImageUrls: Record<number, string> = {};
     
-    // Debug temporário para verificar o que está chegando do backend
-    
     contas.forEach(conta => {
-        temImagem: !!(conta.imagemLogo && conta.imagemLogo.length > 0),
-        tamanhoImagem: conta.imagemLogo?.length || 0,
-        primeiros4Bytes: conta.imagemLogo?.slice(0, 4) || []
-      });
-      
       if (conta.id && conta.imagemLogo && conta.imagemLogo.length > 0) {
         const url = processarImagem(conta);
         if (url) {

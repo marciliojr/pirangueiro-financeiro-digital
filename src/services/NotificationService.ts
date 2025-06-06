@@ -6,7 +6,18 @@ interface Notificacao {
   data: string;
 }
 
-const API_URL = '/api';
+// Configurar base URL baseada no ambiente
+const getBaseURL = () => {
+  // No Docker (produção), sempre usar URL relativa para aproveitar o proxy do nginx
+  // Em desenvolvimento local, usar URL absoluta para o backend
+  if (import.meta.env.PROD || window.location.port === '8082') {
+    return "/api";
+  }
+  // Se for desenvolvimento, usar URL absoluta para o backend
+  return import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+};
+
+const API_URL = getBaseURL();
 
 export const NotificationService = {
   async getNotificacoes(): Promise<Notificacao[]> {

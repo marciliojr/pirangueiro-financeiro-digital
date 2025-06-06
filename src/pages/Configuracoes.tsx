@@ -172,14 +172,7 @@ const Configuracoes = () => {
     try {
       setOperacaoEmAndamento(true);
       
-        nome: arquivoSelecionado.name,
-        tamanho: arquivoSelecionado.size,
-        tipo: arquivoSelecionado.type,
-        ultimaModificacao: arquivoSelecionado.lastModified
-      });
-      
       const resultado = await BackupService.iniciarImportacao(arquivoSelecionado);
-      
       
       if (resultado.sucesso) {
         toast.success("✅ Importação iniciada! Acompanhe o progresso abaixo.");
@@ -198,7 +191,6 @@ const Configuracoes = () => {
         toast.error("❌ Erro ao iniciar importação.");
       }
     } catch (error) {
-      
       toast.error(`❌ ${(error as Error).message}`);
     } finally {
       setOperacaoEmAndamento(false);
