@@ -10,7 +10,7 @@ interface Notificacao {
 const getBaseURL = () => {
   // No Docker (produção), sempre usar URL relativa para aproveitar o proxy do nginx
   // Em desenvolvimento local, usar URL absoluta para o backend
-  if (import.meta.env.PROD || window.location.port === '8082') {
+  if (import.meta.env.PROD) {
     return "/api";
   }
   // Se for desenvolvimento, usar URL absoluta para o backend
