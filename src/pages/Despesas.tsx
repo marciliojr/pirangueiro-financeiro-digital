@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { DespesasService, DespesaDTO } from "@/services/despesas";
@@ -16,6 +16,7 @@ import { DespesaForm } from "@/components/despesas/DespesaForm";
 import { ConfirmDialog } from "@/components/despesas/ConfirmDialog";
 import { cn } from "@/lib/utils";
 import jsPDF from "jspdf";
+import { logger, LogModules, LogActions } from "@/utils/logger";
 
 type SortField = 'descricao' | 'data' | 'categoria' | 'conta' | 'cartao' | 'valor';
 type SortOrder = 'asc' | 'desc';
@@ -55,6 +56,14 @@ const Despesas = () => {
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const queryClient = useQueryClient();
 
+  // Log carregamento da página
+  useEffect(() => {
+    logger.info(LogModules.DESPESAS, LogActions.PAGE_LOAD, {
+      mes: mesSelecionado,
+      ano: anoSelecionado
+    });
+  }, []);
+
   // Obter lista de despesas
   const { data: despesasPage, isLoading } = useQuery({
     queryKey: ["despesas", searchTerm, mesSelecionado, anoSelecionado, paginaAtual],
@@ -81,32 +90,49 @@ const Despesas = () => {
 
   // Mutação para excluir despesa
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => DespesasService.excluir(id),
+    mutationFn: (id: number) => {
+      logger.info(LogModules.DESPESAS, LogActions.DELETE, { despesaId: id });
+      return DespesasService.excluir(id);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["despesas"] });
       toast.success("Despesa excluída com sucesso!");
       setIsDeleteDialogOpen(false);
+      logger.info(LogModules.DESPESAS, LogActions.DELETE_SUCCESS);
     },
+    onError: (error) => {
+      logger.error(LogModules.DESPESAS, LogActions.DELETE_ERROR, { error });
+    }
   });
 
   // Manipuladores de eventos
   const handlePageChange = (newPage: number) => {
     setPaginaAtual(newPage);
+    logger.debug(LogModules.DESPESAS, 'página alterada', { pagina: newPage });
   };
 
   const openCreateForm = () => {
     setCurrentDespesa(null);
     setIsFormOpen(true);
+    logger.info(LogModules.DESPESAS, 'formulário de criação aberto');
   };
 
   const openEditForm = (despesa: DespesaDTO) => {
     setCurrentDespesa(despesa);
     setIsFormOpen(true);
+    logger.info(LogModules.DESPESAS, 'formulário de edição aberto', { 
+      despesaId: despesa.id, 
+      descricao: despesa.descricao 
+    });
   };
 
   const openDeleteDialog = (despesa: DespesaDTO) => {
     setCurrentDespesa(despesa);
     setIsDeleteDialogOpen(true);
+    logger.info(LogModules.DESPESAS, 'diálogo de exclusão aberto', { 
+      despesaId: despesa.id, 
+      descricao: despesa.descricao 
+    });
   };
 
   const handleCloseForm = () => {
@@ -224,6 +250,13 @@ const Despesas = () => {
   };
 
   const exportarPDF = async () => {
+    logger.info(LogModules.DESPESAS, LogActions.EXPORT, { 
+      formato: 'PDF',
+      mes: mesSelecionado,
+      ano: anoSelecionado,
+      termo: searchTerm
+    });
+    
     const doc = new jsPDF();
     
     // Configurar fonte para suportar caracteres especiais
@@ -293,8 +326,13 @@ const Despesas = () => {
     doc.text(`Total: ${formatarMoeda(total)}`, 150, yPosition);
     
     // Salvar o PDF
-    doc.save(`despesas_${new Date().toISOString().split('T')[0]}.pdf`);
+    const nomeArquivo = `despesas_${new Date().toISOString().split('T')[0]}.pdf`;
+    doc.save(nomeArquivo);
     toast.success("Relatório PDF gerado com sucesso!");
+    logger.info(LogModules.DESPESAS, LogActions.EXPORT_SUCCESS, { 
+      arquivo: nomeArquivo,
+      totalRegistros: despesasParaExportar.length 
+    });
   };
 
   return (
@@ -325,8 +363,12 @@ const Despesas = () => {
               placeholder="Buscar despesas..."
               value={searchTerm}
               onChange={(e) => {
-                setSearchTerm(e.target.value);
+                const termo = e.target.value;
+                setSearchTerm(termo);
                 setPaginaAtual(0);
+                if (termo.length >= 3 || termo.length === 0) {
+                  logger.info(LogModules.DESPESAS, 'busca realizada', { termo });
+                }
               }}
               className="pl-8"
             />
@@ -336,7 +378,12 @@ const Despesas = () => {
             value={mesSelecionado?.toString()}
             onValueChange={(value) => {
               setPaginaAtual(0);
-              setMesSelecionado(value === "undefined" ? undefined : parseInt(value));
+              const novoMes = value === "undefined" ? undefined : parseInt(value);
+              setMesSelecionado(novoMes);
+              logger.info(LogModules.DESPESAS, LogActions.FILTER_APPLY, { 
+                filtro: 'mes', 
+                valor: novoMes 
+              });
             }}
           >
             <SelectTrigger className="w-[180px]">
@@ -356,7 +403,12 @@ const Despesas = () => {
             value={anoSelecionado?.toString()}
             onValueChange={(value) => {
               setPaginaAtual(0);
-              setAnoSelecionado(value === "undefined" ? undefined : parseInt(value));
+              const novoAno = value === "undefined" ? undefined : parseInt(value);
+              setAnoSelecionado(novoAno);
+              logger.info(LogModules.DESPESAS, LogActions.FILTER_APPLY, { 
+                filtro: 'ano', 
+                valor: novoAno 
+              });
             }}
           >
             <SelectTrigger className="w-[180px]">

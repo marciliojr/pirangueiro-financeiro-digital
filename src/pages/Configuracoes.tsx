@@ -12,6 +12,7 @@ import { SplashScreen } from "@/components/admin/SplashScreen";
 import { AdminService } from "@/services/admin";
 import { BackupService, StatusBackup, StatusImportacao } from "@/services/backup";
 import { toast } from "sonner";
+import { logger, LogModules, LogActions } from "@/utils/logger";
 
 const Configuracoes = () => {
   const [modalOpen, setModalOpen] = useState(false);
@@ -27,6 +28,7 @@ const Configuracoes = () => {
 
   // Carregar status do backup ao inicializar
   useEffect(() => {
+    logger.info(LogModules.CONFIGURACOES, LogActions.PAGE_LOAD);
     carregarStatusBackup();
   }, []);
 
@@ -42,11 +44,13 @@ const Configuracoes = () => {
   const carregarStatusBackup = async () => {
     try {
       setCarregandoStatus(true);
+      logger.info(LogModules.CONFIGURACOES, LogActions.LOAD, { tipo: 'status_backup' });
       const status = await BackupService.obterStatus();
       setStatusBackup(status);
+      logger.info(LogModules.CONFIGURACOES, LogActions.LOAD_SUCCESS, { tipo: 'status_backup' });
     } catch (error) {
-      console.error('Erro ao carregar status do backup:', error);
-      toast.error("❌ Erro ao carregar status do backup");
+      logger.error(LogModules.CONFIGURACOES, LogActions.LOAD_ERROR, { tipo: 'status_backup', error });
+      toast.error("Erro ao carregar status do backup");
     } finally {
       setCarregandoStatus(false);
     }
@@ -57,12 +61,14 @@ const Configuracoes = () => {
     setSplashOpen(true);
 
     try {
+      logger.info(LogModules.CONFIGURACOES, LogActions.DATA_CLEAR, { confirmacao });
       await AdminService.limparBaseDados(confirmacao);
       
       // Simular um pequeno delay para mostrar a splash screen
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      toast.success("✅ Todos os dados foram apagados com sucesso!");
+      toast.success("Todos os dados foram apagados com sucesso!");
+      logger.info(LogModules.CONFIGURACOES, 'dados limpos com sucesso');
       setSplashOpen(false);
       
       // Redirecionar para o dashboard
@@ -72,30 +78,33 @@ const Configuracoes = () => {
       window.location.reload();
     } catch (error) {
       setSplashOpen(false);
-      toast.error("❌ Erro ao limpar os dados. Tente novamente.");
-      console.error("Erro ao limpar dados:", error);
+      toast.error("Erro ao limpar os dados. Tente novamente.");
+      logger.error(LogModules.CONFIGURACOES, 'erro ao limpar dados', { error });
     }
   };
 
   const handleBaixarBackup = async () => {
     try {
       setOperacaoEmAndamento(true);
+      logger.info(LogModules.CONFIGURACOES, LogActions.BACKUP_CREATE);
       const blob = await BackupService.exportarBackup();
       
       // Criar link para download
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `backup-pirangueiro-${new Date().toISOString().split('T')[0]}.json`;
+      const nomeArquivo = `backup-pirangueiro-${new Date().toISOString().split('T')[0]}.json`;
+      link.download = nomeArquivo;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
       
-      toast.success("✅ Backup baixado com sucesso!");
+      toast.success("Backup baixado com sucesso!");
+      logger.info(LogModules.CONFIGURACOES, 'backup criado com sucesso', { arquivo: nomeArquivo });
     } catch (error) {
-      console.error('Erro ao baixar backup:', error);
-      toast.error("❌ Erro ao baixar backup. Tente novamente.");
+      logger.error(LogModules.CONFIGURACOES, 'erro ao criar backup', { error });
+      toast.error("Erro ao baixar backup. Tente novamente.");
     } finally {
       setOperacaoEmAndamento(false);
     }
@@ -112,8 +121,16 @@ const Configuracoes = () => {
     if (file) {
       if (file.type === 'application/json' || file.name.endsWith('.json')) {
         setArquivoSelecionado(file);
+        logger.info(LogModules.CONFIGURACOES, 'arquivo selecionado', { 
+          nome: file.name, 
+          tamanho: file.size 
+        });
       } else {
-        toast.error("❌ Por favor, selecione apenas arquivos JSON.");
+        toast.error("Por favor, selecione apenas arquivos JSON.");
+        logger.warn(LogModules.CONFIGURACOES, 'arquivo inválido selecionado', { 
+          nome: file.name, 
+          tipo: file.type 
+        });
         event.target.value = '';
       }
     }
@@ -135,7 +152,10 @@ const Configuracoes = () => {
         if (status.status === 'CONCLUIDO') {
           clearInterval(interval);
           setIntervalId(null);
-          toast.success(`✅ Backup importado com sucesso! ${status.totalRegistros} registros processados.`);
+          toast.success(`Backup importado com sucesso! ${status.totalRegistros} registros processados.`);
+          logger.info(LogModules.CONFIGURACOES, LogActions.IMPORT_SUCCESS, { 
+            totalRegistros: status.totalRegistros 
+          });
           
           // Limpar arquivo selecionado
           setArquivoSelecionado(null);
@@ -153,11 +173,15 @@ const Configuracoes = () => {
         } else if (status.status === 'ERRO') {
           clearInterval(interval);
           setIntervalId(null);
-          toast.error(`❌ Erro na importação: ${status.erro || status.mensagem}`);
+          toast.error(`Erro na importação: ${status.erro || status.mensagem}`);
+          logger.error(LogModules.CONFIGURACOES, LogActions.IMPORT_ERROR, { 
+            erro: status.erro,
+            mensagem: status.mensagem 
+          });
           setImportacaoAtiva(null);
         }
       } catch (error) {
-        console.error('Erro ao verificar status:', error);
+        logger.error(LogModules.CONFIGURACOES, 'erro verificar status importação', { error });
         clearInterval(interval);
         setIntervalId(null);
         setImportacaoAtiva(null);
@@ -169,28 +193,26 @@ const Configuracoes = () => {
 
   const handleImportarBackup = async () => {
     if (!arquivoSelecionado) {
-      toast.error("❌ Selecione um arquivo antes de importar.");
+      toast.error("Selecione um arquivo antes de importar.");
       return;
     }
 
     try {
       setOperacaoEmAndamento(true);
       
-      console.log('=== INICIANDO IMPORTAÇÃO ===');
-      console.log('Arquivo selecionado:', {
+      logger.info(LogModules.CONFIGURACOES, LogActions.IMPORT, {
         nome: arquivoSelecionado.name,
         tamanho: arquivoSelecionado.size,
-        tipo: arquivoSelecionado.type,
-        ultimaModificacao: arquivoSelecionado.lastModified
+        tipo: arquivoSelecionado.type
       });
       
       const resultado = await BackupService.iniciarImportacao(arquivoSelecionado);
       
-      console.log('=== RESULTADO DA IMPORTAÇÃO ===');
-      console.log('Resultado completo:', resultado);
-      
       if (resultado.sucesso) {
-        toast.success("✅ Importação iniciada! Acompanhe o progresso abaixo.");
+        toast.success("Importação iniciada! Acompanhe o progresso abaixo.");
+        logger.info(LogModules.CONFIGURACOES, 'importação iniciada', { 
+          requestId: resultado.requestId 
+        });
         setImportacaoAtiva({
           encontrado: true,
           requestId: resultado.requestId,
@@ -203,16 +225,14 @@ const Configuracoes = () => {
         // Iniciar monitoramento
         iniciarMonitoramentoImportacao(resultado.requestId);
       } else {
-        console.error('Importação falhou - sucesso = false');
-        toast.error("❌ Erro ao iniciar importação.");
+        logger.error(LogModules.CONFIGURACOES, 'falha iniciar importação', { sucesso: resultado.sucesso });
+        toast.error("Erro ao iniciar importação.");
       }
     } catch (error) {
-      console.error('=== ERRO NA IMPORTAÇÃO ===');
-      console.error('Erro completo:', error);
-      console.error('Tipo do erro:', typeof error);
-      console.error('Mensagem:', (error as Error).message);
-      
-      toast.error(`❌ ${(error as Error).message}`);
+      logger.error(LogModules.CONFIGURACOES, LogActions.IMPORT_ERROR, { 
+        error: (error as Error).message 
+      });
+      toast.error(`${(error as Error).message}`);
     } finally {
       setOperacaoEmAndamento(false);
     }

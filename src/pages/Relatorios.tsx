@@ -31,6 +31,7 @@ import {
 import { relatoriosService, RelatorioGerencial } from '@/services/relatorios';
 import { formatarMoeda } from '@/services/api';
 import { cn } from '@/lib/utils';
+import { logger, LogModules, LogActions } from "@/utils/logger";
 
 export default function Relatorios() {
   const [relatorio, setRelatorio] = useState<RelatorioGerencial | null>(null);
@@ -41,6 +42,7 @@ export default function Relatorios() {
   const componentePdfRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    logger.info(LogModules.RELATORIOS, LogActions.PAGE_LOAD);
     carregarRelatorio();
   }, []);
 
@@ -52,9 +54,16 @@ export default function Relatorios() {
       const dataInicioFormatada = dataInicio ? format(dataInicio, 'yyyy-MM-dd') : undefined;
       const dataFimFormatada = dataFim ? format(dataFim, 'yyyy-MM-dd') : undefined;
       
+      logger.info(LogModules.RELATORIOS, LogActions.LOAD, { 
+        dataInicio: dataInicioFormatada, 
+        dataFim: dataFimFormatada 
+      });
+      
       const data = await relatoriosService.gerarRelatorioGerencial(dataInicioFormatada, dataFimFormatada);
       setRelatorio(data);
+      logger.info(LogModules.RELATORIOS, LogActions.LOAD_SUCCESS);
     } catch (error) {
+      logger.error(LogModules.RELATORIOS, LogActions.LOAD_ERROR, { error });
       toast.error('Erro ao carregar relatório gerencial');
     } finally {
       setLoading(false);
@@ -62,12 +71,17 @@ export default function Relatorios() {
   };
 
   const aplicarFiltrosDatas = () => {
+    logger.info(LogModules.RELATORIOS, LogActions.FILTER_APPLY, { 
+      dataInicio, 
+      dataFim 
+    });
     carregarRelatorio();
   };
 
   const limparFiltros = () => {
     setDataInicio(undefined);
     setDataFim(undefined);
+    logger.info(LogModules.RELATORIOS, 'filtros limpos');
     // Recarregar automaticamente após limpar
     setTimeout(() => {
       carregarRelatorio();
@@ -75,6 +89,7 @@ export default function Relatorios() {
   };
 
   const filtroRapido = (tipo: 'mes' | 'trimestre' | 'semestre' | 'ano') => {
+    logger.info(LogModules.RELATORIOS, 'filtro rápido aplicado', { tipo });
     const hoje = new Date();
     const ano = hoje.getFullYear();
     const mes = hoje.getMonth();
@@ -169,6 +184,7 @@ export default function Relatorios() {
     }
     
     setExportandoPdf(true);
+    logger.info(LogModules.RELATORIOS, LogActions.GENERATE_PDF);
     
     try {
       handleImprimirPdf();
@@ -176,10 +192,11 @@ export default function Relatorios() {
       setTimeout(() => {
         setExportandoPdf(false);
         toast.success('Relatório PDF gerado com sucesso!');
+        logger.info(LogModules.RELATORIOS, 'PDF gerado com sucesso');
       }, 1000);
     } catch (error) {
       setExportandoPdf(false);
-      console.error('Erro ao gerar PDF:', error);
+      logger.error(LogModules.RELATORIOS, LogActions.EXPORT_ERROR, { error });
       toast.error('Erro ao gerar relatório PDF');
     }
   };

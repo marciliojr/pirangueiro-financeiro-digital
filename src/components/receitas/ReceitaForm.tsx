@@ -7,6 +7,7 @@ import { ContasService, ContaDTO } from "@/services/contas";
 import { formatarData, formatarMoeda, formatarValorMonetario } from "@/services/api";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { logger, LogModules, LogActions } from "@/utils/logger";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { UppercaseInput } from "@/components/ui/uppercase-input";
@@ -150,7 +151,10 @@ export function ReceitaForm({ receita, isOpen, onClose, onSubmit }: ReceitaFormP
         await createMutation.mutateAsync(receitaData);
       }
     } catch (error) {
-      console.error("Erro ao salvar receita:", error);
+      logger.error(LogModules.RECEITAS, LogActions.SAVE_ERROR, { 
+        error,
+        tipo: receita?.id ? 'edicao' : 'criacao'
+      });
       toast.error("Erro ao salvar receita");
     }
   };

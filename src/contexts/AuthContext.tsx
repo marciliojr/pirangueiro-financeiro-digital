@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { UsuariosService } from '@/services/usuarios';
 import { UsuarioDTO } from '@/services/contas';
+import { logger, LogModules, LogActions } from '@/utils/logger';
 
 export interface User {
   username: string;
@@ -80,31 +81,39 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
       }
 
-      console.log('✅ Usuário sincronizado com o backend:', usuarioBackend);
+      logger.info(LogModules.AUTH, 'usuário sincronizado com backend', { 
+        usuarioId: usuarioBackend.id 
+      });
     } catch (error) {
-      console.error('❌ Erro ao sincronizar com o backend:', error);
+      logger.error(LogModules.AUTH, 'erro sincronizar backend', { error });
     }
   };
 
   // Carrega o usuário do localStorage na inicialização
   useEffect(() => {
-    console.log("🔄 INICIALIZANDO AuthContext...");
+    logger.info(LogModules.AUTH, 'inicializando contexto');
     
     // Primeiro, verifica se há uma sessão válida
     const storedSession = localStorage.getItem(SESSION_KEY);
-    console.log("🔍 Verificando sessão armazenada:", !!storedSession);
+    logger.debug(LogModules.AUTH, 'verificando sessão armazenada', { 
+      temSessao: !!storedSession 
+    });
     
     if (storedSession) {
       try {
         const session: Session = JSON.parse(storedSession);
-        console.log("📄 Sessão encontrada:", session);
+        logger.debug(LogModules.AUTH, 'sessão encontrada', { 
+          usuario: session.user.username 
+        });
         
         if (isSessionValid(session)) {
           // Sessão válida - mantém o usuário logado
-          console.log("✅ Sessão válida! Fazendo login automático...");
+          logger.info(LogModules.AUTH, LogActions.LOGIN_SUCCESS, { 
+            tipo: 'sessao_automatica',
+            usuario: session.user.username 
+          });
           setCurrentUser(session.user);
           setIsAuthenticated(true);
-          console.log('✅ Sessão válida encontrada. Usuário mantido logado.');
           
           // Atualiza a expiração da sessão (renovação automática)
           saveSession(session.user);
@@ -116,40 +125,39 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           return;
         } else {
           // Sessão expirada - remove do localStorage
-          console.log("⏰ Sessão expirada. Removendo...");
+          logger.info(LogModules.AUTH, LogActions.SESSION_EXPIRED);
           clearSession();
-          console.log('⏰ Sessão expirada. Usuário redirecionado para login.');
         }
       } catch (error) {
-        console.error('❌ Erro ao carregar sessão do localStorage:', error);
+        logger.error(LogModules.AUTH, 'erro carregar sessão', { error });
         clearSession();
       }
     }
 
     // Se não há sessão válida, carrega apenas os dados do usuário (sem logar automaticamente)
-    console.log("🔍 Verificando usuário armazenado...");
+    logger.debug(LogModules.AUTH, 'verificando usuário armazenado');
     const storedUser = localStorage.getItem(STORAGE_KEY);
     
     if (storedUser) {
       try {
         const user = JSON.parse(storedUser);
-        console.log("👤 Usuário encontrado no localStorage:", user);
+        logger.debug(LogModules.AUTH, 'usuário encontrado', { usuario: user.username });
         setCurrentUser(user);
       } catch (error) {
-        console.error('❌ Erro ao carregar usuário do localStorage:', error);
+        logger.error(LogModules.AUTH, 'erro carregar usuário', { error });
         // Se houver erro, cria o usuário padrão
-        console.log("🔧 Criando usuário padrão devido ao erro...");
+        logger.info(LogModules.AUTH, 'criando usuário padrão devido ao erro');
         localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_USER));
         setCurrentUser(DEFAULT_USER);
       }
     } else {
       // Se não existir usuário, cria o usuário padrão
-      console.log("👤 Nenhum usuário encontrado. Criando usuário padrão...");
+      logger.info(LogModules.AUTH, 'criando usuário padrão');
       localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_USER));
       setCurrentUser(DEFAULT_USER);
     }
     
-    console.log("✅ Inicialização do AuthContext concluída");
+    logger.info(LogModules.AUTH, 'inicialização concluída');
   }, []);
 
   // Verifica periodicamente se a sessão ainda é válida
@@ -164,10 +172,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           if (!isSessionValid(session)) {
             // Sessão expirou - desloga automaticamente
             logout();
-            console.log('⏰ Sessão expirou automaticamente após 2 dias.');
+            logger.info(LogModules.AUTH, LogActions.SESSION_EXPIRED, { 
+              motivo: 'verificacao_periodica' 
+            });
           }
         } catch (error) {
-          console.error('❌ Erro ao verificar sessão:', error);
+          logger.error(LogModules.AUTH, 'erro verificar sessão', { error });
           logout();
         }
       } else {
@@ -203,21 +213,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
-      console.log("🚀 INICIANDO LOGIN - AuthContext");
-      console.log("👤 Usuário:", username);
-      console.log("🔐 Senha:", password);
-      console.log("📍 Estado atual isAuthenticated:", isAuthenticated);
-      console.log("👤 CurrentUser atual:", currentUser);
+      logger.info(LogModules.AUTH, LogActions.LOGIN, { usuario: username });
       
       // Primeiro tenta autenticar no backend
-      console.log("🔄 Tentando autenticação no backend...");
       const usuarioBackend = await UsuariosService.autenticar(username, password);
-      
-      console.log("🔍 Resultado da autenticação backend:", usuarioBackend);
       
       if (usuarioBackend) {
         // Autenticação bem-sucedida no backend
-        console.log("✅ Autenticação backend bem-sucedida! Processando...");
+        logger.info(LogModules.AUTH, LogActions.LOGIN_SUCCESS, { 
+          tipo: 'backend',
+          usuarioId: usuarioBackend.id 
+        });
         
         const user: User = {
           username: usuarioBackend.nome,
@@ -225,40 +231,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           id: usuarioBackend.id
         };
         
-        console.log("👤 Objeto User criado:", user);
-        
-        console.log("🔄 Definindo currentUser...");
         setCurrentUser(user);
-        
-        console.log("🔄 Definindo isAuthenticated como true...");
         setIsAuthenticated(true);
-        
-        console.log("💾 Salvando no localStorage...");
         localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
-        
-        console.log("🕒 Salvando sessão...");
         saveSession(user);
-        
-        console.log('🚀 Login realizado via backend. Sessão criada por 2 dias.');
-        
-        // Aguarda um pouco para garantir que o estado foi atualizado
-        setTimeout(() => {
-          console.log("📍 Estado final isAuthenticated:", isAuthenticated);
-          console.log("👤 Estado final currentUser:", currentUser);
-        }, 100);
         
         return true;
       }
       
-      console.log("❌ Autenticação backend falhou. Tentando fallback local...");
-      
       // Se falhar no backend, tenta validação local como fallback
       if (currentUser && currentUser.username === username && currentUser.password === password) {
-        console.log("✅ Fallback local bem-sucedido!");
+        logger.info(LogModules.AUTH, LogActions.LOGIN_SUCCESS, { 
+          tipo: 'fallback_local' 
+        });
         setIsAuthenticated(true);
         saveSession(currentUser);
-        
-        console.log('🚀 Login realizado localmente (fallback). Sincronizando com backend...');
         
         // Tenta sincronizar com o backend após login local
         setTimeout(() => {
@@ -268,22 +255,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return true;
       }
       
-      console.log("❌ Todas as tentativas de login falharam");
+      logger.warn(LogModules.AUTH, LogActions.LOGIN_ERROR, { 
+        motivo: 'credenciais_invalidas' 
+      });
       return false;
     } catch (error) {
-      console.error('❌ ERRO CRÍTICO durante autenticação:', error);
-      console.error('Stack trace:', error.stack);
+      logger.error(LogModules.AUTH, LogActions.LOGIN_ERROR, { error });
       
       // Em caso de erro, tenta validação local
       if (currentUser && currentUser.username === username && currentUser.password === password) {
-        console.log("✅ Usando fallback local devido a erro...");
+        logger.info(LogModules.AUTH, LogActions.LOGIN_SUCCESS, { 
+          tipo: 'fallback_erro' 
+        });
         setIsAuthenticated(true);
         saveSession(currentUser);
-        console.log('🚀 Login realizado localmente devido a erro no backend.');
         return true;
       }
       
-      console.log("❌ Nem mesmo o fallback local funcionou");
       return false;
     }
   };
@@ -291,7 +279,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const logout = () => {
     setIsAuthenticated(false);
     clearSession();
-    console.log('👋 Logout realizado. Sessão removida.');
+    logger.info(LogModules.AUTH, LogActions.LOGOUT);
   };
 
   const updateUser = async (username: string, password: string) => {
@@ -302,7 +290,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Se estiver logado, atualiza também a sessão
     if (isAuthenticated) {
       saveSession(newUser);
-      console.log('👤 Credenciais atualizadas. Sessão renovada.');
+      logger.info(LogModules.AUTH, 'credenciais atualizadas', { usuario: username });
     }
 
     // Sincroniza as alterações com o backend
@@ -314,10 +302,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           nome: username,
           senha: password
         });
-        console.log('✅ Credenciais atualizadas no backend.');
+        logger.info(LogModules.AUTH, 'credenciais atualizadas no backend');
       } else {
         // Usuário não tem ID do backend, tenta criar de forma controlada
-        console.log('🔄 Criando novo usuário no backend de forma controlada...');
+        logger.info(LogModules.AUTH, 'criando usuário no backend');
         const usuarioCriado = await UsuariosService.criarUsuarioControlado(username, password);
         
         if (usuarioCriado.id) {
@@ -333,12 +321,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             saveSession(userComId);
           }
           
-          console.log('✅ Novo usuário criado no backend:', usuarioCriado);
+          logger.info(LogModules.AUTH, 'usuário criado no backend', { 
+            usuarioId: usuarioCriado.id 
+          });
         }
       }
     } catch (error) {
-      console.error('❌ Erro ao atualizar/criar credenciais no backend:', error);
-      console.log('ℹ️ Dados salvos localmente. Sincronização será tentada posteriormente.');
+      logger.error(LogModules.AUTH, 'erro atualizar credenciais backend', { error });
     }
   };
 

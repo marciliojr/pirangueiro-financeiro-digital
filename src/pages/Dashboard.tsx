@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
@@ -7,6 +7,7 @@ import { formatarMoeda } from "@/services/api";
 import { ReceitasService } from "@/services/receitas";
 import { DespesasService } from "@/services/despesas";
 import { GraficosService } from "@/services/graficos";
+import { logger, LogModules, LogActions } from "@/utils/logger";
 import { FinanceSummaryCard } from "@/components/dashboard/FinanceSummaryCard";
 import { GraficoReceitasDespesas } from "@/components/dashboard/GraficoReceitasDespesas";
 import { GraficoReceitasDespesasMensal } from "@/components/dashboard/GraficoReceitasDespesasMensal";
@@ -103,14 +104,17 @@ const Dashboard = () => {
   const saldo = totalReceitas - totalDespesas;
   const saldoTotal = totalReceitasAcumulado - totalDespesasAcumulado;
 
-  // Debug - verificar valores
-  console.log("Debug Dashboard - Valores:");
-  console.log("Total Receitas Mensal:", totalReceitas);
-  console.log("Total Despesas Mensal:", totalDespesas);
-  console.log("Saldo Mensal:", saldo);
-  console.log("Total Receitas Acumulado (endpoint):", totalReceitasAcumulado);
-  console.log("Total Despesas Acumulado (endpoint):", totalDespesasAcumulado);
-  console.log("Saldo Total:", saldoTotal);
+  // Log carregamento da página
+  useEffect(() => {
+    logger.info(LogModules.DASHBOARD, LogActions.PAGE_LOAD, {
+      mes,
+      ano,
+      totalReceitas,
+      totalDespesas,
+      saldo: saldo,
+      saldoTotal
+    });
+  }, [mes, ano, totalReceitas, totalDespesas, saldo, saldoTotal]);
 
   // Se os dados estiverem carregando, você pode mostrar um indicador de carregamento
   if (isLoadingReceitas || isLoadingDespesas || isLoadingGrafico || isLoadingSaudeFinanceira || isLoadingDespesasCartao || isLoadingSazonalidade || isLoadingTendenciaGastos) {
@@ -126,7 +130,11 @@ const Dashboard = () => {
         />
         
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
-          <Select value={mes.toString()} onValueChange={(value) => setMes(Number(value))}>
+          <Select value={mes.toString()} onValueChange={(value) => {
+            const novoMes = Number(value);
+            setMes(novoMes);
+            logger.info(LogModules.DASHBOARD, LogActions.FILTER_APPLY, { filtro: 'mes', valor: novoMes });
+          }}>
             <SelectTrigger className="w-full sm:w-[140px]">
               <SelectValue placeholder="Mês" />
             </SelectTrigger>
@@ -138,7 +146,11 @@ const Dashboard = () => {
               ))}
             </SelectContent>
           </Select>
-          <Select value={ano.toString()} onValueChange={(value) => setAno(Number(value))}>
+          <Select value={ano.toString()} onValueChange={(value) => {
+            const novoAno = Number(value);
+            setAno(novoAno);
+            logger.info(LogModules.DASHBOARD, LogActions.FILTER_APPLY, { filtro: 'ano', valor: novoAno });
+          }}>
             <SelectTrigger className="w-full sm:w-[100px]">
               <SelectValue placeholder="Ano" />
             </SelectTrigger>
@@ -181,7 +193,10 @@ const Dashboard = () => {
         />
       </div>
 
-      <Tabs value={tabAtiva} onValueChange={setTabAtiva} className="w-full">
+      <Tabs value={tabAtiva} onValueChange={(tab) => {
+        setTabAtiva(tab);
+        logger.info(LogModules.DASHBOARD, 'aba alterada', { aba: tab });
+      }} className="w-full">
         <div className="overflow-x-auto pb-2">
           <TabsList className="w-full justify-start border-b mb-6 flex-nowrap">
             <TabsTrigger value="receitas-despesas-mensal" className="flex items-center gap-2 whitespace-nowrap">

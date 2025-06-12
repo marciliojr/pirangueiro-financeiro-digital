@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ReceitasService, ReceitaDTO } from "@/services/receitas";
@@ -15,6 +15,7 @@ import { ConfirmDialog } from "@/components/receitas/ConfirmDialog";
 import { cn } from "@/lib/utils";
 import jsPDF from "jspdf";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { logger, LogModules, LogActions } from "@/utils/logger";
 
 type SortField = 'descricao' | 'data' | 'categoria' | 'conta' | 'valor';
 
@@ -57,6 +58,14 @@ const Receitas = () => {
   const tamanhoPagina = 20;
   const queryClient = useQueryClient();
 
+  // Log carregamento da página
+  useEffect(() => {
+    logger.info(LogModules.RECEITAS, LogActions.PAGE_LOAD, {
+      mes: mesSelecionado,
+      ano: anoSelecionado
+    });
+  }, []);
+
   // Obter lista de receitas
   const { data: receitasData = { content: [], totalElements: 0 }, isLoading } = useQuery({
     queryKey: ["receitas", searchTerm, mesSelecionado, anoSelecionado, pagina, sortConfig],
@@ -87,12 +96,19 @@ const Receitas = () => {
 
   // Mutação para excluir receita
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => ReceitasService.excluir(id),
+    mutationFn: (id: number) => {
+      logger.info(LogModules.RECEITAS, LogActions.DELETE, { receitaId: id });
+      return ReceitasService.excluir(id);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["receitas"] });
       toast.success("Receita excluída com sucesso!");
       setIsDeleteDialogOpen(false);
+      logger.info(LogModules.RECEITAS, LogActions.DELETE_SUCCESS);
     },
+    onError: (error) => {
+      logger.error(LogModules.RECEITAS, LogActions.DELETE_ERROR, { error });
+    }
   });
 
   // Manipuladores de eventos
@@ -106,27 +122,38 @@ const Receitas = () => {
     const mes = value === "todos" ? undefined : parseInt(value);
     setMesSelecionado(mes);
     setPagina(0);
+    logger.info(LogModules.RECEITAS, LogActions.FILTER_APPLY, { filtro: 'mes', valor: mes });
   };
 
   const handleAnoChange = (value: string) => {
     const ano = value === "todos" ? undefined : parseInt(value);
     setAnoSelecionado(ano);
     setPagina(0);
+    logger.info(LogModules.RECEITAS, LogActions.FILTER_APPLY, { filtro: 'ano', valor: ano });
   };
 
   const openCreateForm = () => {
     setCurrentReceita(null);
     setIsFormOpen(true);
+    logger.info(LogModules.RECEITAS, 'formulário de criação aberto');
   };
 
   const openEditForm = (receita: ReceitaDTO) => {
     setCurrentReceita(receita);
     setIsFormOpen(true);
+    logger.info(LogModules.RECEITAS, 'formulário de edição aberto', { 
+      receitaId: receita.id, 
+      descricao: receita.descricao 
+    });
   };
 
   const openDeleteDialog = (receita: ReceitaDTO) => {
     setCurrentReceita(receita);
     setIsDeleteDialogOpen(true);
+    logger.info(LogModules.RECEITAS, 'diálogo de exclusão aberto', { 
+      receitaId: receita.id, 
+      descricao: receita.descricao 
+    });
   };
 
   const handleCloseForm = () => {
@@ -168,6 +195,13 @@ const Receitas = () => {
   };
 
   const exportarPDF = () => {
+    logger.info(LogModules.RECEITAS, LogActions.EXPORT, { 
+      formato: 'PDF',
+      mes: mesSelecionado,
+      ano: anoSelecionado,
+      termo: searchTerm
+    });
+    
     const doc = new jsPDF();
     
     // Configurar fonte para suportar caracteres especiais
@@ -228,8 +262,13 @@ const Receitas = () => {
     doc.text(`Total: ${formatarMoeda(total)}`, 150, yPosition);
     
     // Salvar o PDF
-    doc.save(`receitas_${new Date().toISOString().split('T')[0]}.pdf`);
+    const nomeArquivo = `receitas_${new Date().toISOString().split('T')[0]}.pdf`;
+    doc.save(nomeArquivo);
     toast.success("Relatório PDF gerado com sucesso!");
+    logger.info(LogModules.RECEITAS, LogActions.EXPORT_SUCCESS, { 
+      arquivo: nomeArquivo,
+      totalRegistros: receitas.length 
+    });
   };
 
   // Componente para o botão de ordenação
@@ -298,9 +337,13 @@ const Receitas = () => {
               placeholder="Buscar receitas..."
               value={searchTerm}
               onChange={(e) => {
-                setSearchTerm(e.target.value);
+                const termo = e.target.value;
+                setSearchTerm(termo);
                 setPagina(0);
                 queryClient.invalidateQueries({ queryKey: ["receitas"] });
+                if (termo.length >= 3 || termo.length === 0) {
+                  logger.info(LogModules.RECEITAS, 'busca realizada', { termo });
+                }
               }}
               className="pl-8"
             />

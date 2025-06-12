@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { CategoriasService, CategoriaDTO } from "@/services/categorias";
@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { CategoriaForm } from "@/components/categorias/CategoriaForm";
 import { ConfirmDialog } from "@/components/categorias/ConfirmDialog";
+import { logger, LogModules, LogActions } from "@/utils/logger";
 
 const Categorias = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -17,6 +18,11 @@ const Categorias = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [currentCategoria, setCurrentCategoria] = useState<CategoriaDTO | null>(null);
   const queryClient = useQueryClient();
+
+  // Log carregamento da página
+  useEffect(() => {
+    logger.info(LogModules.CATEGORIAS, LogActions.PAGE_LOAD);
+  }, []);
 
   // Obter lista de categorias
   const { data: categorias = [], isLoading } = useQuery({
@@ -28,33 +34,44 @@ const Categorias = () => {
 
   // Mutação para excluir categoria
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => CategoriasService.excluir(id),
+    mutationFn: (id: number) => {
+      logger.info(LogModules.CATEGORIAS, LogActions.DELETE, { categoriaId: id });
+      return CategoriasService.excluir(id);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["categorias"] });
       toast.success("Categoria excluída com sucesso!");
       setIsDeleteDialogOpen(false);
+      logger.info(LogModules.CATEGORIAS, LogActions.DELETE_SUCCESS);
     },
+    onError: (error) => {
+      logger.error(LogModules.CATEGORIAS, LogActions.DELETE_ERROR, { error });
+    }
   });
 
   // Manipuladores de eventos
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     queryClient.invalidateQueries({ queryKey: ["categorias"] });
+    logger.info(LogModules.CATEGORIAS, 'busca realizada', { termo: searchTerm });
   };
 
   const openCreateForm = () => {
     setCurrentCategoria(null);
     setIsFormOpen(true);
+    logger.info(LogModules.CATEGORIAS, 'formulário de criação aberto');
   };
 
   const openEditForm = (categoria: CategoriaDTO) => {
     setCurrentCategoria(categoria);
     setIsFormOpen(true);
+    logger.info(LogModules.CATEGORIAS, 'formulário de edição aberto', { categoriaId: categoria.id, nome: categoria.nome });
   };
 
   const openDeleteDialog = (categoria: CategoriaDTO) => {
     setCurrentCategoria(categoria);
     setIsDeleteDialogOpen(true);
+    logger.info(LogModules.CATEGORIAS, 'diálogo de exclusão aberto', { categoriaId: categoria.id, nome: categoria.nome });
   };
 
   const handleCloseForm = () => {

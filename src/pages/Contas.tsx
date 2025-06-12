@@ -12,6 +12,7 @@ import { formatarMoeda } from "@/services/api";
 import { ContaForm } from "@/components/contas/ContaForm";
 import { ConfirmDialog } from "@/components/contas/ConfirmDialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { logger, LogModules, LogActions } from "@/utils/logger";
 
 const Contas = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -21,6 +22,11 @@ const Contas = () => {
   const [saldos, setSaldos] = useState<Record<number, SaldoContaDTO>>({});
   const [imageUrls, setImageUrls] = useState<Record<number, string>>({});
   const queryClient = useQueryClient();
+
+  // Log carregamento da página
+  useEffect(() => {
+    logger.info(LogModules.CONTAS, LogActions.PAGE_LOAD);
+  }, []);
 
   // Obter lista de contas
   const { data: contas = [], isLoading } = useQuery({
@@ -39,8 +45,9 @@ const Contas = () => {
           try {
             const saldo = await ContasService.buscarSaldo(conta.id);
             saldosTemp[conta.id] = saldo;
+            logger.debug(LogModules.CONTAS, 'saldo carregado', { contaId: conta.id, saldo: saldo.saldo });
           } catch (error) {
-            console.error(`Erro ao buscar saldo da conta ${conta.id}:`, error);
+            logger.error(LogModules.CONTAS, LogActions.LOAD_ERROR, { contaId: conta.id, error });
             // Criar um objeto SaldoContaDTO vazio em caso de erro
             saldosTemp[conta.id] = {
               contaId: conta.id,
@@ -69,11 +76,11 @@ const Contas = () => {
     }
 
     try {
-      console.log(`Processando imagem da conta ${conta.id}...`);
+      logger.debug(LogModules.CONTAS, 'processando imagem', { contaId: conta.id });
       
       // Verificar se é um array válido
       if (!Array.isArray(conta.imagemLogo)) {
-        console.error(`Conta ${conta.id}: imagemLogo não é um array:`, typeof conta.imagemLogo);
+        logger.warn(LogModules.CONTAS, 'imagem inválida', { contaId: conta.id, tipo: typeof conta.imagemLogo });
         return null;
       }
 
@@ -108,7 +115,7 @@ const Contas = () => {
           const { bytes, tipo } = abordagem();
           
           if (bytes.length === 0) {
-            console.warn(`Conta ${conta.id}: Array de bytes vazio (${tipo})`);
+            logger.warn(LogModules.CONTAS, 'imagem vazia', { contaId: conta.id, abordagem: tipo });
             continue;
           }
 
@@ -126,18 +133,23 @@ const Contas = () => {
           
           if (blob.size > 0) {
             const url = URL.createObjectURL(blob);
-            console.log(`✅ Conta ${conta.id}: Sucesso com abordagem ${tipo} - ${mimeType}, ${blob.size} bytes`);
+            logger.debug(LogModules.CONTAS, 'imagem processada', { 
+              contaId: conta.id, 
+              abordagem: tipo, 
+              mimeType, 
+              tamanho: blob.size 
+            });
             return url;
           }
         } catch (error) {
-          console.log(`Conta ${conta.id}: Falha na abordagem ${abordagem.name}:`, error);
+          logger.debug(LogModules.CONTAS, 'falha processamento imagem', { contaId: conta.id, abordagem: abordagem.name });
         }
       }
 
-      console.error(`❌ Conta ${conta.id}: Todas as abordagens falharam`);
+      logger.warn(LogModules.CONTAS, 'todas abordagens falharam', { contaId: conta.id });
       return null;
     } catch (error) {
-      console.error(`Erro geral ao processar imagem da conta ${conta.id}:`, error);
+      logger.error(LogModules.CONTAS, 'erro processar imagem', { contaId: conta.id, error });
       return null;
     }
   };
@@ -146,16 +158,9 @@ const Contas = () => {
   useEffect(() => {
     const newImageUrls: Record<number, string> = {};
     
-    // Debug temporário para verificar o que está chegando do backend
-    console.log('Processando contas para imagens:', contas.length);
+    logger.debug(LogModules.CONTAS, 'carregando imagens', { totalContas: contas.length });
     
     contas.forEach(conta => {
-      console.log(`Conta ${conta.id}:`, {
-        temImagem: !!(conta.imagemLogo && conta.imagemLogo.length > 0),
-        tamanhoImagem: conta.imagemLogo?.length || 0,
-        primeiros4Bytes: conta.imagemLogo?.slice(0, 4) || []
-      });
-      
       if (conta.id && conta.imagemLogo && conta.imagemLogo.length > 0) {
         const url = processarImagem(conta);
         if (url) {
@@ -164,7 +169,7 @@ const Contas = () => {
       }
     });
 
-    console.log('URLs de imagens criadas:', Object.keys(newImageUrls).length);
+    logger.debug(LogModules.CONTAS, 'imagens carregadas', { totalImagens: Object.keys(newImageUrls).length });
     setImageUrls(newImageUrls);
 
     // Cleanup function
@@ -177,33 +182,44 @@ const Contas = () => {
 
   // Mutação para excluir conta
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => ContasService.excluir(id),
+    mutationFn: (id: number) => {
+      logger.info(LogModules.CONTAS, LogActions.DELETE, { contaId: id });
+      return ContasService.excluir(id);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["contas"] });
       toast.success("Conta excluída com sucesso!");
       setIsDeleteDialogOpen(false);
+      logger.info(LogModules.CONTAS, LogActions.DELETE_SUCCESS);
     },
+    onError: (error) => {
+      logger.error(LogModules.CONTAS, LogActions.DELETE_ERROR, { error });
+    }
   });
 
   // Manipuladores de eventos
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     queryClient.invalidateQueries({ queryKey: ["contas"] });
+    logger.info(LogModules.CONTAS, 'busca realizada', { termo: searchTerm });
   };
 
   const openCreateForm = () => {
     setCurrentConta(null);
     setIsFormOpen(true);
+    logger.info(LogModules.CONTAS, 'formulário de criação aberto');
   };
 
   const openEditForm = (conta: ContaDTO) => {
     setCurrentConta(conta);
     setIsFormOpen(true);
+    logger.info(LogModules.CONTAS, 'formulário de edição aberto', { contaId: conta.id, nome: conta.nome });
   };
 
   const openDeleteDialog = (conta: ContaDTO) => {
     setCurrentConta(conta);
     setIsDeleteDialogOpen(true);
+    logger.info(LogModules.CONTAS, 'diálogo de exclusão aberto', { contaId: conta.id, nome: conta.nome });
   };
 
   const handleCloseForm = () => {
@@ -293,11 +309,11 @@ const Contas = () => {
                           <AvatarImage 
                             src={imageUrls[conta.id]}
                             alt={conta.nome}
-                            onLoad={() => console.log(`✅ Imagem carregada com sucesso para conta ${conta.id}`)}
-                            onError={(e) => {
-                              console.error(`❌ Erro ao carregar imagem da conta ${conta.id}:`, e);
-                              console.log(`URL que falhou: ${imageUrls[conta.id!]}`);
-                            }}
+                            onLoad={() => logger.debug(LogModules.CONTAS, 'imagem exibida', { contaId: conta.id })}
+                            onError={() => logger.warn(LogModules.CONTAS, 'erro exibir imagem', { 
+                              contaId: conta.id, 
+                              url: imageUrls[conta.id!] 
+                            })}
                           />
                         ) : (
                           <AvatarFallback>{conta.nome.substring(0, 2).toUpperCase()}</AvatarFallback>
