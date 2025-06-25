@@ -23,6 +23,16 @@ api.interceptors.response.use(
     
     let mensagemErro = 'Ocorreu um erro ao processar a requisição';
     
+    // Filtrar erros específicos que não devem mostrar toast
+    const urlComErro = error.config?.url || '';
+    const isErro500 = error.response?.status === 500;
+    
+    // Não mostrar toast para endpoints problemáticos conhecidos
+    if (isErro500 && (urlComErro.includes('/usuario/') || urlComErro.includes('/contas/usuario/'))) {
+      console.warn('Erro 500 ignorado para endpoint conhecido:', urlComErro);
+      return Promise.reject(error);
+    }
+    
     if (erroResponse) {
       mensagemErro = `${erroResponse.mensagem}`;
       

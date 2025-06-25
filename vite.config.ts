@@ -23,40 +23,8 @@ export default defineConfig(({ mode }) => ({
     componentTagger(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
-      manifest: {
-        name: 'Pirangueiro Financeiro Digital',
-        short_name: 'Pirangueiro',
-        description: 'Seu assistente de finanças pessoais completo',
-        theme_color: '#3b82f6',
-        background_color: '#ffffff',
-        display: 'standalone',
-        orientation: 'portrait-primary',
-        scope: '/',
-        start_url: '/',
-        categories: ['finance', 'productivity'],
-        lang: 'pt-BR',
-        prefer_related_applications: false,
-        display_override: ['standalone', 'minimal-ui'],
-        icons: [
-          {
-            src: 'pwa-192x192.png',
-            sizes: '192x192',
-            type: 'image/png'
-          },
-          {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png'
-          },
-          {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any maskable'
-          }
-        ]
-      },
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
+      // Remove o manifest do Vite PWA para usar o manual em public/manifest.webmanifest
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         runtimeCaching: [
@@ -85,7 +53,7 @@ export default defineConfig(({ mode }) => ({
         ]
       },
       devOptions: {
-        enabled: false
+        enabled: true // Reabilitando PWA em desenvolvimento para testar
       }
     })
   ].filter(Boolean),

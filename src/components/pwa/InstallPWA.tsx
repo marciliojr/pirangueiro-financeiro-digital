@@ -10,9 +10,9 @@ export const InstallPWA = () => {
   const handleInstall = async () => {
     const success = await installApp();
     if (success) {
-      toast.success('🎉 App instalado com sucesso! Verifique sua tela inicial.');
+      toast.success('App instalado com sucesso! Verifique sua tela inicial.');
     } else {
-      toast.error('❌ Não foi possível instalar o app. Tente novamente.');
+      toast.error('Não foi possível instalar o app. Tente novamente.');
     }
   };
 
@@ -26,7 +26,7 @@ export const InstallPWA = () => {
         >
           <Smartphone className="h-3 w-3" />
           <span className="hidden xs:inline">Instalado</span>
-          <span className="xs:hidden">📱</span>
+          <span className="xs:hidden">APP</span>
         </Badge>
         
         {/* Status de conexão só aparece se offline */}

@@ -9,7 +9,7 @@ export const UsuariosService = {
     // CORREÇÃO: Intercepta usuários com senha null e tenta corrigir
     const usuarios = response.data.map((usuario: UsuarioDTO & { senha: string | null }) => {
       if (!usuario.senha || usuario.senha === null) {
-        console.log(`⚠️ INTERCEPTADO: Usuário "${usuario.nome}" com senha null - corrigindo...`);
+        console.log(`INTERCEPTADO: Usuário "${usuario.nome}" com senha null - corrigindo...`);
         
         // Se for o admin, define senha padrão
         if (usuario.nome === "adm") {
@@ -28,7 +28,7 @@ export const UsuariosService = {
       return usuario as UsuarioDTO;
     });
     
-    console.log("📊 Usuários após correção de senhas null:", usuarios);
+    console.log("Usuários após correção de senhas null:", usuarios);
     return usuarios;
   },
 
@@ -39,7 +39,7 @@ export const UsuariosService = {
     
     // CORREÇÃO: Se senha for null, força senha padrão
     if (!usuario.senha || usuario.senha === null) {
-      console.log(`⚠️ INTERCEPTADO: Usuário ID ${id} com senha null - corrigindo...`);
+      console.log(`INTERCEPTADO: Usuário ID ${id} com senha null - corrigindo...`);
       return {
         ...usuario,
         senha: usuario.nome === "adm" ? "123" : "123"
@@ -57,16 +57,16 @@ export const UsuariosService = {
 
   // Cria um novo usuário - VERSÃO CORRIGIDA
   criar: async (usuario: UsuarioDTO): Promise<UsuarioDTO> => {
-    console.log("📝 CRIANDO usuário - dados enviados:", usuario);
+    console.log("CRIANDO usuário - dados enviados:", usuario);
     
     const response = await api.post("/usuarios", usuario);
     const usuarioCriado = response.data;
     
-    console.log("📄 CRIANDO usuário - dados retornados:", usuarioCriado);
+    console.log("CRIANDO usuário - dados retornados:", usuarioCriado);
     
     // CORREÇÃO: Se o backend retornar senha null, força a senha local
     if (!usuarioCriado.senha || usuarioCriado.senha === null) {
-      console.log("🚨 BACKEND BUG: Retornou senha null! Forçando correção...");
+      console.log("BACKEND BUG: Retornou senha null! Forçando correção...");
       
       // Tenta atualizar forçadamente via PUT
       try {
@@ -75,11 +75,11 @@ export const UsuariosService = {
           senha: usuario.senha
         });
         
-        console.log("🔧 Tentativa de correção via PUT:", usuarioCorrigido.data);
+        console.log("Tentativa de correção via PUT:", usuarioCorrigido.data);
         
         // Se ainda for null, retorna com senha local
         if (!usuarioCorrigido.data.senha || usuarioCorrigido.data.senha === null) {
-          console.log("❌ PUT também falhou. Usando dados locais...");
+          console.log("PUT também falhou. Usando dados locais...");
           return {
             ...usuarioCriado,
             senha: usuario.senha
@@ -88,7 +88,7 @@ export const UsuariosService = {
         
         return usuarioCorrigido.data;
       } catch (error) {
-        console.log("❌ Erro no PUT de correção. Usando dados locais...");
+        console.log("Erro no PUT de correção. Usando dados locais...");
         return {
           ...usuarioCriado,
           senha: usuario.senha
@@ -101,7 +101,7 @@ export const UsuariosService = {
 
   // Força recriação do usuário admin deletando e criando novamente
   forcarRecriaoAdmin: async (): Promise<UsuarioDTO> => {
-    console.log("🔄 FORÇANDO RECRIAÇÃO DO ADMIN...");
+    console.log("FORÇANDO RECRIAÇÃO DO ADMIN...");
     
     try {
       // 1. Lista usuários para encontrar admin
@@ -109,7 +109,7 @@ export const UsuariosService = {
       const adminAtual = usuarios.data.find((u: UsuarioDTO & { senha: string | null }) => u.nome === "adm");
       
       if (adminAtual) {
-        console.log("🗑️ Deletando admin atual:", adminAtual);
+        console.log("Deletando admin atual:", adminAtual);
         await api.delete(`/usuarios/${adminAtual.id}`);
       }
       
@@ -117,18 +117,18 @@ export const UsuariosService = {
       await new Promise(resolve => setTimeout(resolve, 500));
       
       // 3. Cria novo admin via API direta (sem usar o UsuariosService.criar)
-      console.log("➕ Criando novo admin via API direta...");
+      console.log("Criando novo admin via API direta...");
       const novoAdmin = {
         nome: "adm",
         senha: "123"
       };
       
       const response = await api.post("/usuarios", novoAdmin);
-      console.log("✅ Admin recriado:", response.data);
+      console.log("Admin recriado:", response.data);
       
       // Se ainda retornar senha null, força retorno local
       if (!response.data.senha || response.data.senha === null) {
-        console.log("🚨 Ainda retorna null! Usando dados locais...");
+        console.log("Ainda retorna null! Usando dados locais...");
         return {
           ...response.data,
           senha: "123"
@@ -157,21 +157,21 @@ export const UsuariosService = {
   // DEBUG: Lista todos os usuários com detalhes
   debug: async (): Promise<void> => {
     try {
-      console.log("🔍 DEBUG: Listando todos os usuários na base...");
+      console.log("DEBUG: Listando todos os usuários na base...");
       const usuarios = await UsuariosService.listar();
       
-      console.log("📊 Total de usuários encontrados:", usuarios.length);
+      console.log("Total de usuários encontrados:", usuarios.length);
       usuarios.forEach((user, index) => {
-        console.log(`👤 Usuário ${index + 1}:`, {
+        console.log(`Usuário ${index + 1}:`, {
           id: user.id,
           nome: user.nome,
           temSenha: !!(user.senha && user.senha !== null && user.senha !== ''),
-          senha: (user.senha && user.senha !== null && user.senha !== '') ? `${user.senha.substring(0, 3)}***` : '❌ sem senha'
+          senha: (user.senha && user.senha !== null && user.senha !== '') ? `${user.senha.substring(0, 3)}***` : 'sem senha'
         });
       });
       
       if (usuarios.length === 0) {
-        console.log("❌ Nenhum usuário encontrado na base!");
+        console.log("Nenhum usuário encontrado na base!");
       }
     } catch (error) {
       console.error("❌ Erro no debug de usuários:", error);
@@ -203,7 +203,7 @@ export const UsuariosService = {
         };
         
         const usuarioCriado = await UsuariosService.criar(adminPadrao);
-        console.log("✅ Usuário administrador padrão criado:", usuarioCriado);
+        console.log("Usuário administrador padrão criado:", usuarioCriado);
         
         return usuarioCriado;
       }
@@ -215,7 +215,7 @@ export const UsuariosService = {
       }
       
       // Se não tem admin "adm" mas tem outros usuários, cria mesmo assim
-      console.log("⚠️ Base tem usuários mas não tem 'adm'. Criando administrador padrão...");
+      console.log("Base tem usuários mas não tem 'adm'. Criando administrador padrão...");
       const adminPadrao: UsuarioDTO = {
         nome: "adm", 
         senha: "123"
@@ -249,7 +249,7 @@ export const UsuariosService = {
   // Autentica usuário (verifica nome e senha no backend) - VERSÃO MELHORADA
   autenticar: async (nome: string, senha: string): Promise<UsuarioDTO | null> => {
     try {
-      console.log("🔐 Iniciando autenticação para:", nome);
+      console.log("Iniciando autenticação para:", nome);
       
       // Primeiro garante que existe um admin padrão
       await UsuariosService.garantirAdministradorPadrao();
@@ -258,11 +258,11 @@ export const UsuariosService = {
       await UsuariosService.debug();
       
       // Depois tenta autenticar
-      console.log("🔍 Buscando usuário no backend:", nome);
+      console.log("Buscando usuário no backend:", nome);
       const usuario = await UsuariosService.buscarPorNome(nome);
       
       if (!usuario) {
-        console.log("❌ Usuário não encontrado no backend:", nome);
+        console.log("Usuário não encontrado no backend:", nome);
         return null;
       }
       
@@ -439,13 +439,26 @@ export const UsuariosService = {
         const user = JSON.parse(userData);
         // Mapeia 'username' do contexto para 'nome' do backend
         const nomeUsuario = user.username || user.nome || "adm";
-        return await UsuariosService.buscarOuCriarUsuarioPorNome(nomeUsuario);
+        
+        // CORREÇÃO: Retorna usuário local sem fazer chamadas ao backend
+        // Isso evita o erro 500 até que o endpoint seja corrigido no backend
+        console.log("Obtendo usuário atual dos dados locais:", nomeUsuario);
+        return {
+          id: user.id || 1,
+          nome: nomeUsuario,
+          senha: user.password || "123"
+        };
       }
     } catch (error) {
       console.error("Erro ao obter usuário atual:", error);
     }
     
-    // Fallback para usuário padrão
-    return await UsuariosService.buscarOuCriarUsuarioPorNome("adm");
+    // Fallback para usuário padrão - também sem chamadas ao backend
+    console.log("Usando usuário padrão local");
+    return {
+      id: 1,
+      nome: "adm",
+      senha: "123"
+    };
   }
 }; 
