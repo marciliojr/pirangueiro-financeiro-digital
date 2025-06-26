@@ -203,13 +203,13 @@ const Dashboard = () => {
               <BarChart3 className="h-4 w-4" />
               <span>Receitas x Despesas</span>
             </TabsTrigger>
-            <TabsTrigger value="despesas-cartao" className="flex items-center gap-2 whitespace-nowrap">
-              <CreditCard className="h-4 w-4" />
-              <span>Despesas por Cartão</span>
-            </TabsTrigger>
             <TabsTrigger value="categorias" className="flex items-center gap-2 whitespace-nowrap">
               <PieChart className="h-4 w-4" />
               <span>Categorias</span>
+            </TabsTrigger>
+            <TabsTrigger value="despesas-cartao" className="flex items-center gap-2 whitespace-nowrap">
+              <CreditCard className="h-4 w-4" />
+              <span>Despesas por Cartão</span>
             </TabsTrigger>
             <TabsTrigger value="saude-financeira" className="flex items-center gap-2 whitespace-nowrap">
               <Activity className="h-4 w-4" />
