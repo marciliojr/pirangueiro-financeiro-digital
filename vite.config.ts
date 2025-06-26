@@ -17,6 +17,17 @@ export default defineConfig(({ mode }) => ({
       }
     }
   },
+  preview: {
+    host: "::",
+    port: 4173,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
+  },
   plugins: [
     react(),
     mode === 'development' &&
