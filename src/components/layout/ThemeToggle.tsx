@@ -3,7 +3,11 @@ import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
-export const ThemeToggle = () => {
+interface ThemeToggleProps {
+  isCollapsed?: boolean;
+}
+
+export const ThemeToggle = ({ isCollapsed = false }: ThemeToggleProps) => {
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -26,7 +30,8 @@ export const ThemeToggle = () => {
     <button
       onClick={handleToggle}
       className={cn(
-        "flex h-10 w-10 items-center justify-center rounded-full transition-all duration-300",
+        "flex items-center justify-center rounded-full transition-all duration-300",
+        isCollapsed ? "h-8 w-8" : "h-10 w-10",
         isLight 
           ? "bg-primary text-primary-foreground hover:bg-primary/90" 
           : "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90"
@@ -34,9 +39,15 @@ export const ThemeToggle = () => {
       aria-label={isLight ? "Ativar modo escuro" : "Ativar modo claro"}
     >
       {isLight ? (
-        <Moon className="h-5 w-5 transition-transform duration-300 ease-in-out" />
+        <Moon className={cn(
+          "transition-transform duration-300 ease-in-out",
+          isCollapsed ? "h-4 w-4" : "h-5 w-5"
+        )} />
       ) : (
-        <Sun className="h-5 w-5 transition-transform duration-300 ease-in-out" />
+        <Sun className={cn(
+          "transition-transform duration-300 ease-in-out",
+          isCollapsed ? "h-4 w-4" : "h-5 w-5"
+        )} />
       )}
     </button>
   );

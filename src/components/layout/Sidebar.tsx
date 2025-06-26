@@ -62,7 +62,7 @@ export const Sidebar = () => {
     <aside 
       className={cn(
         "flex h-screen flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300",
-        collapsed ? "w-16" : "w-64"
+        collapsed ? "w-16" : "w-52 sm:w-64"
       )}
     >
       <div className="flex h-16 items-center justify-between border-b border-sidebar-border p-4">
@@ -97,26 +97,40 @@ export const Sidebar = () => {
         ))}
       </div>
       
-      <div className="flex items-center justify-between border-t border-sidebar-border p-4">
+      <div className={cn(
+        "flex items-center border-t border-sidebar-border gap-2",
+        collapsed 
+          ? "flex-col justify-center p-2" 
+          : "flex-col sm:flex-row justify-between p-2 sm:p-4"
+      )}>
         <div>
           {!collapsed && (
-            <p className="text-xs text-sidebar-foreground font-medium">
+            <p className="text-xs text-sidebar-foreground font-medium text-center sm:text-left">
               © 2025 Pirangueiro
             </p>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className={cn(
+          "flex items-center gap-2",
+          collapsed 
+            ? "flex-col" 
+            : "flex-col sm:flex-row"
+        )}>
           <Link
             to="/configuracoes"
             className={cn(
-              "flex h-10 w-10 items-center justify-center rounded-full transition-all duration-300",
-              "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+              "flex items-center justify-center rounded-full transition-all duration-300",
+              "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700",
+              collapsed ? "h-8 w-8" : "h-10 w-10"
             )}
             title="Configurações"
           >
-            <Settings className="h-5 w-5 transition-transform duration-300 ease-in-out" />
+            <Settings className={cn(
+              "transition-transform duration-300 ease-in-out",
+              collapsed ? "h-4 w-4" : "h-5 w-5"
+            )} />
           </Link>
-          <ThemeToggle />
+          <ThemeToggle isCollapsed={collapsed} />
         </div>
       </div>
     </aside>
